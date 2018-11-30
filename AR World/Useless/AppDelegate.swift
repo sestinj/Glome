@@ -7,15 +7,73 @@
 //
 
 import UIKit
+import Firebase
+import FirebaseUI
+import CoreLocation
+import GoogleSignIn
+import SwiftyGiphy
+
+var applicationDelegate: UIApplicationDelegate!
+var location: CLLocation?
+//var auth: FUIAuth!
+var auth: Auth!
+var db: Firestore!
+var storage: Storage!
+var mainVC: ViewController!
 
 @UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, CLLocationManagerDelegate {
+
 
     var window: UIWindow?
+    public var locationManager: CLLocationManager?
 
-
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        location = locations.first!
+        //SHOULD RELOAD MAP AND NEAR ITEMS HERE
+    }
+    
+    
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        SwiftyGiphyAPI.shared.apiKey = "KLqJTmi5nTLVex52N6su5TULWWWjf0vv"
+        applicationDelegate = self
+        
+        //FIREBASE
+        FirebaseApp.configure()
+        storage = Storage.storage()
+        db = Firestore.firestore()
+        let settings = db.settings
+        settings.areTimestampsInSnapshotsEnabled = true
+        db.settings = settings
+        
+        auth = Auth.auth()
+        //Authorization
+        // You need to adopt a FUIAuthDelegate protocol to receive callback
+//        auth = FUIAuth.defaultAuthUI()!
+//        auth.delegate = self
+//        let providers: [FUIAuthProvider] = [
+//            FUIGoogleAuth(scopes: [kGoogleUserInfoEmailScope])
+//            ]
+//        auth.providers = providers
+        
+        //Location manager
+        locationManager = CLLocationManager()
+        locationManager!.desiredAccuracy = kCLLocationAccuracyBest
+        locationManager!.headingFilter = 5
+        locationManager!.pausesLocationUpdatesAutomatically = false
+        locationManager!.distanceFilter = 25
+        locationManager!.requestWhenInUseAuthorization()
+        locationManager!.delegate = self
+        locationManager!.startUpdatingLocation()
+        //Authorization
+        
+        
+        //Styling
+        let navA = UINavigationBar.appearance()
+        navA.tintColor = vibrantPurple
+        
+        
         return true
     }
 
