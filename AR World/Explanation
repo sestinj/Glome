@@ -1,0 +1,33 @@
+ORGANIZATION OF USERS AND THEIR POSTS:
+
+There are 2 main collections:
+1) items
+    -id is random
+    -Data:
+        ~uid
+        ~name
+        ~comments
+            -username
+            -text
+            -uid
+        ~date
+        ~Media Type (Text, Gif, Photo, Shape)
+2) users
+-id is user.uid : but this is changing, just use query in the future
+    -Data:
+        ~uid
+        ~list of blocked users (uids)
+        ~list of followers
+        ~number of followers
+        ~list of following
+        ~number of following
+        ~list of items
+        ~username
+        ~imageName = User's profile picture
+        ~bioText = User's biography
+
+3) flagged
+-this is for me to look at, to follow through with 'CSC' and possibly remove users.
+    -uid
+    -uid
+    -description of comment/post
