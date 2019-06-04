@@ -23,28 +23,20 @@ class UsersTableViewController: UITableViewController {
         tableView.register(UINib(nibName: "UsersTableViewCell", bundle: nil), forCellReuseIdentifier: "usersReuseIdentifier")
         
         //Load the users, then reload table view
-        db.collection("users").whereField("uid", isEqualTo: userUID).getDocuments { (querySnap1, err) in
-            if let err = err {
-                print(err)
-            } else if querySnap1!.documents.count > 0 {
-                if let list = querySnap1!.documents.first!.data()[self.listType] as? [String] {
-                    var count = list.count
-                    for uid in list {
-                        count -= 1
-                        db.collection("users").whereField("uid", isEqualTo: uid).getDocuments(completion: { (querySnap, err) in
-                            if let err = err {
-                                print(err)
-                            } else if querySnap!.documents.count > 0 {
-                                self.documents.append(querySnap1!.documents.first!)
-                                if count < 1 {
-                                    self.tableView.reloadData()
-                                }
-                            }
-                        })
-                    }
+        getDocuments(from: db.collection("users").whereField("uid", isEqualTo: userUID as Any), with: { (querySnap1) in
+            if let list = querySnap1.first!.rawData![self.listType] as? [String] {
+                var count = list.count
+                for uid in list {
+                    count -= 1
+                    getUser(uid: uid, with: { (querySnap) in
+                        self.documents.append(querySnap1.first!.document)
+                        if count < 1 {
+                            self.tableView.reloadData()
+                        }
+                    })
                 }
             }
-        }
+        })
     }
 
     // MARK: - Table view data source
@@ -68,7 +60,7 @@ class UsersTableViewController: UITableViewController {
             cell.usernameLabel.text = "User not found"
             return cell
         }
-        let name = doc.data()!["name"] as! String
+        let name = doc.data()!["username"] as! String
         cell.usernameLabel.text = name
         if let imageName = doc.data()!["imageName"] as? String {
             storage.reference().child(imageName).getData(maxSize: 10240*10240) { (imageData, err) in

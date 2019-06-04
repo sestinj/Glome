@@ -10,6 +10,10 @@ There are 2 main collections:
             -username
             -text
             -uid
+        ~likes
+            -uid
+            -username
+        ~numLikes
         ~date
         ~Media Type (Text, Gif, Photo, Shape)
 2) users
@@ -23,11 +27,23 @@ There are 2 main collections:
         ~number of following
         ~list of items
         ~username
-        ~imageName = User's profile picture
-        ~bioText = User's biography
+        ~photoid = User's profile picture
+        ~biotext = User's biography
 
 3) flagged
 -this is for me to look at, to follow through with 'CSC' and possibly remove users.
     -uid
     -uid
     -description of comment/post
+
+
+
+The GoogleService-Info.plist on the outside is for the referral database
+
+
+TODO
++ Combine SCNNode creation with ARItem class
++ Search any subclass of FirestoreDocument
+++++ Fix pop-up
+++++ Replace all strings with FirestoreKeys.x.rawValue
++Scrolling out on map

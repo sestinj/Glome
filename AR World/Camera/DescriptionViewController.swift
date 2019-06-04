@@ -8,51 +8,57 @@
 
 import Firebase
 import UIKit
+import CoreLocation
+import MapKit
 
-class DescriptionViewController: AuthHandlerViewController, UITableViewDelegate, UITableViewDataSource, UIGestureRecognizerDelegate {
+class DescriptionViewController: AuthHandlerViewController, UITableViewDelegate, UITableViewDataSource, UIGestureRecognizerDelegate, UITextViewDelegate {
     
-    var doc: DocumentSnapshot?
-    var comments = [String]()
-    var users = [String]()
-    var uids = [String]()
+    var doc: ARItem?
+    var comments = [Comment]()
+    public var camVC: CameraViewController!
     
-    //MARK: Outlets
-    @IBAction func flagged(_ sender: UIButton) {
-        //Send message to community safety committee
-        flag.backgroundColor = .red
-        flag.layer.roundCorners()
-        if let uid = doc!.data()!["uid"] as? String {
-            if let currentUser = auth.currentUser {
-                var docDescription = ""
-                let name = doc!.data()!["Name"] as? String
-                let mediaType = doc!.data()!["Media Type"] as? String
-                if let mediaType = mediaType {
-                    switch mediaType {
-                    case "Photo":
-                        docDescription = "The image can be found at: \(String(describing: doc!.data()!["Photo Name"] as? String))"
-                    case "Gif":
-                        docDescription = "The image can be found at: \(String(describing: doc!.data()!["Photo Name"] as? String))"
-                    case "Text":
-                        docDescription = "The text is: \(String(describing: doc!.data()!["Text"] as? String))"
-                    case "Shape":
-                        docDescription = "Just a shape"
-                    default:
-                        docDescription = "Unknown mediaType"
-                    }
-                }
-                db.collection("flagged").addDocument(data: ["stuff":"The user with uid \(currentUser.uid) flagged a post by the user with uid \(uid). Media Type: \(String(describing: mediaType)), Name: \(String(describing: name)), Description: \(docDescription)"])
-            }
+    //Likes
+    @IBOutlet weak var likesLabel: UILabel!
+    @IBOutlet weak var likeButton: UIButton!
+    private var liked = false
+    private var numLikes = 0
+    @IBAction func likeButtonPressed(_ sender: UIButton) {
+        guard let currentUser = auth.currentUser else {return}
+        if liked {
+            likeButton.setImage(UIImage(named: "unliked"), for: .normal)
+            numLikes -= 1
+            likesLabel.text = "\(numLikes)"
+            doc!.reference.updateData(["numLikes":numLikes])
+            getFirstDocument(from: doc!.reference.collection("likes").whereField("uid", isEqualTo: currentUser.uid), with: { (queryDoc) in
+                let like = Like(doc: queryDoc.document)
+                like.delete()
+            })
+        } else {
+            likeButton.setImage(UIImage(named: "liked"), for: .normal)
+            numLikes += 1
+            likesLabel.text = "\(numLikes)"
+            doc!.reference.updateData(["numLikes":numLikes])
+            doc!.reference.collection("likes").addDocument(data: ["uid":currentUser.uid, "username":currentUser.displayName!])
+            
         }
+        liked = !liked
     }
-    @IBOutlet weak var flag: UIButton!
-    @objc func addButtonPressed() {
-        //Add a new comment
-        let alert = UIAlertController(title: "Comment", message: nil, preferredStyle: .alert)
-        alert.addTextField(configurationHandler: nil)
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
-        let sendAction = UIAlertAction(title: "Send", style: .default) { (action) in
+    
+    //MARK: UITextViewDelegate
+    func textViewShouldEndEditing(_ textView: UITextView) -> Bool {
+        return true
+    }
+    func textViewDidBeginEditing(_ textView: UITextView) {
+        textView.text = "   "
+    }
+    func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+        if text == "\n" {
+            //Remove buffer from start of string
+            let startIndex = textView.text.index(textView.text.startIndex, offsetBy: 3)
+            let finalText = String(textView.text[startIndex...])
+            guard finalText != "" else {textView.text = "";textView.resignFirstResponder();return false}
             if let currentUser = auth.currentUser {
-                self.doc!.reference.collection("comments").addDocument(data: ["text": alert.textFields!.first!.text!, "username":currentUser.displayName!, "uid": currentUser.uid])
+                self.doc!.reference.collection("comments").addDocument(data: ["text": finalText, "username":currentUser.displayName!, "uid": currentUser.uid])
                 //Show comment right away
                 self.reloadComments()
             } else {
@@ -60,10 +66,79 @@ class DescriptionViewController: AuthHandlerViewController, UITableViewDelegate,
                 alert.addAction(UIAlertAction(title: "Ok", style: .cancel, handler: nil))
                 self.present(alert, animated: true, completion: nil)
             }
+            textView.text = ""
+            textView.resignFirstResponder()
+            return false
         }
-        alert.addAction(sendAction)
-        present(alert, animated: true, completion: nil)
+        if textView.text.count <= 3 {
+            return false
+        }
+        return true
     }
+    
+    @IBAction func directionsButtonPressed(_ sender: UIButton) {
+        let mapItem = MKMapItem(placemark: MKPlacemark(coordinate: CLLocationCoordinate2D(latitude: doc!.coordinates.latitude, longitude: doc!.coordinates.longitude)))
+        mapItem.name = titleLabel.text!
+        mapItem.openInMaps(launchOptions: nil)
+
+    }
+    @IBOutlet weak var commentContainerView: UIView!
+    @IBOutlet weak var commentBox: MultilineTextField!
+    @IBOutlet weak var glomeLogo: UIImageView!
+    @IBOutlet weak var titleLabel: UILabel!
+    @IBOutlet weak var usernameButton: UsernameLinkButton!
+    @IBOutlet weak var distanceLabel: UILabel!
+    @IBOutlet weak var profilePic: UIImageView!
+    @IBOutlet weak var xButton: UIButton!
+    @IBOutlet weak var menuButton: UIButton!
+    @IBAction func xButtonPressed(_ sender: UIButton) {
+        done()
+    }
+    @IBAction func menuButtonPressed(_ sender: UIButton) {
+        let actionSheet = UIAlertController(title: "Menu", message: nil, preferredStyle: .actionSheet)
+        actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+        let viewAction = UIAlertAction(title: "View", style: .default) { (action) in
+            actionSheet.dismiss(animated: true, completion: nil)
+            self.camVC.singleDocToLoad = self.doc!
+            self.camVC.loadItemNonGeo()
+            self.dismiss(animated: true, completion: nil)
+        }
+        let flagAction = UIAlertAction(title: "Report", style: .destructive) { (alert) in
+            let reportedAlert = UIAlertController(title: "Are you sure?", message: "Reporting this post may cause deletion of this account.", preferredStyle: .alert)
+            reportedAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+            let reportAction = UIAlertAction(title: "Report", style: .destructive, handler: { (theAction) in
+                //Send message to community safety committee
+                if let currentUser = auth.currentUser {
+                    var docDescription: String
+                    switch self.doc!.mediaType {
+                    case .photo(let photoName):
+                        docDescription = "The image can be found at: \(String(describing: photoName))"
+                    case .gif(let url):
+                        docDescription = "The gif can be found at: \(url.absoluteString)"
+                    case .text( _, _, let text):
+                        docDescription = "The text is: \(text)"
+                    case .shape:
+                        docDescription = "Just a shape"
+                    }
+                    db.collection("flagged").addDocument(data: ["stuff":"The user with uid \(currentUser.uid) flagged a post by the user with uid \(self.doc!.uid). Media Type: \(self.doc!.mediaType.string), Name: \(self.doc!.name), Description: \(docDescription)"])
+                }
+            })
+            reportedAlert.addAction(reportAction)
+            self.present(reportedAlert, animated: true, completion: nil)
+        }
+        let shareAction = UIAlertAction(title: "Share", style: .default) { (alert) in
+            let activityItems = ["I found this amazing new app called Glome. This is the next big thing!"]
+            let activity = UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+            self.present(activity, animated: true, completion: nil)
+        }
+        actionSheet.addAction(shareAction)
+        actionSheet.addAction(viewAction)
+        actionSheet.addAction(flagAction)
+        present(actionSheet, animated: true, completion: nil)
+    }
+    
+    
+    //MARK: Outlets
     @IBOutlet weak var tableView: UITableView!
     
     @objc func closeComments() {
@@ -72,39 +147,79 @@ class DescriptionViewController: AuthHandlerViewController, UITableViewDelegate,
     
     //MARK: viewDidLoad()
     override func viewDidLoad() {
+        titleLabel.textColor = .white
+        usernameButton.initialize(uid: doc!.uid, parentVC: self)
+        usernameButton.setTitleColor(.white, for: .normal)
+        
+        commentBox.layer.roundCorners()
+        commentBox.delegate = self
+        commentBox.layer.borderColor = UIColor.darkGray.cgColor
+        commentBox.layer.borderWidth = 1
+        commentContainerView.movesUpWithKeyboard(vc: self)
+        
+        if X() {
+            for subview in view.subviews {
+                subview.frame.origin.y += 22
+            }
+            tableView.frame.size.height -= 22
+            commentContainerView.frame.origin.y += 82
+        }
         //Gestures
         let recognizer = UISwipeGestureRecognizer(target: self, action: #selector(closeComments))
         recognizer.delegate = self
         self.view.addGestureRecognizer(recognizer)
         
+        //Load profile pic
+        profilePic.layer.roundCorners()
+        getUser(uid: doc!.uid, with: { (user) in
+            storage.reference().child(user.imageName).getData(maxSize: 10240*10240) { (imageData, err) in
+                if let err = err {
+                    print(err)
+                } else {
+                    guard let newImage = UIImage(data: imageData!) else {return}
+                    self.profilePic.image = newImage
+                }
+            }
+        })
+        
         //Setup description
         navigationItem.title = ""
-        if let username = doc!.data()!["username"] as? String {
-            navigationItem.prompt = username
+        usernameButton.setTitle(doc!.username, for: .normal)
+        
+        //Likes
+        likeButton.causesImpact(.light)
+        numLikes = doc!.numLikes
+        likesLabel.text = "\(numLikes)"
+        //See if the current user has already liked the post
+        if let currentUser = auth.currentUser {
+            getUser(uid: currentUser.uid, with: { (user) in
+                self.likeButton.setImage(UIImage(named: "liked"), for: .normal)
+                self.liked = true
+            })
         }
-        navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(closeComments))
-        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "+", style: .done, target: self, action: #selector(addButtonPressed))
+        
+        let loc = CLLocation(latitude: doc!.coordinates.latitude, longitude: doc!.coordinates.longitude)
+        if let location = location {
+            distanceLabel.adjustsFontSizeToFitWidth = true
+            distanceLabel.text = "\(Int(location.distance(from: loc)*0.0006213711922373)) miles"
+    }
+        
         
         if X() {
             tableView.frame.size.height += 150
             tableView.frame.origin.y += 22
-            flag.frame.origin.y += 150
         }
         //Load all comments
         if let doc = doc {
-            doc.reference.collection("comments").getDocuments { (querySnap, err) in
-                if let err = err {
-                    print(err)
-                } else {
-                    for queryDoc in querySnap!.documents {
-                        self.users.append(queryDoc.data()["username"] as! String)
-                        self.comments.append(queryDoc.data()["text"] as! String)
-                        self.uids.append(queryDoc.data()["uid"] as! String)
-                    }
-                    self.tableView.reloadData()
-                    self.navigationItem.title = doc.data()!["Name"] as? String
+            getDocuments(from: doc.reference.collection("comments"), with: { (querySnap) in
+                for queryDoc in querySnap {
+                    let comment = Comment(doc: queryDoc.document)
+                    self.comments.append(comment)
                 }
-            }
+                self.tableView.reloadData()
+                self.navigationItem.title = doc.name
+                self.titleLabel.text = doc.name
+            })
         }
         //Table View
         tableView.delegate = self
@@ -117,16 +232,22 @@ class DescriptionViewController: AuthHandlerViewController, UITableViewDelegate,
         return 78
     }
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return comments.count
+        //This is so 'empty' cells aren't transparent
+        return comments.count + 18
     }
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "commentsReuseIdentifier") as! CommentsTableViewCell
         
-        cell.uid = uids[indexPath.row]
+        if indexPath.row >= comments.count {
+            //This is so 'empty' cells aren't transparent
+            return UITableViewCell()
+        }
+        let comment = comments[indexPath.row]
+        cell.uid = comment.uid
         cell.contentView.checkBlockStatus(uid: cell.uid!, vc: self)
-        cell.commentTextView.text = comments[indexPath.row]
-        cell.usernameButton.setTitle(users[indexPath.row], for: .normal)
-        cell.usernameButton.initialize(uid: uids[indexPath.row], parentVC: self)
+        cell.commentTextView.text = comment.text
+        cell.usernameButton.setTitle(comment.username, for: .normal)
+        cell.usernameButton.initialize(uid: comment.uid, parentVC: self)
         return cell
     }
     func numberOfSections(in tableView: UITableView) -> Int {
@@ -136,20 +257,21 @@ class DescriptionViewController: AuthHandlerViewController, UITableViewDelegate,
     
     //MARK: Functions
     func reloadComments() {
-        comments = []
-        users = []
-        uids = []
-        doc!.reference.collection("comments").getDocuments { (querySnap, err) in
-            if let err = err {
-                print(err)
-            } else {
-                for queryDoc in querySnap!.documents {
-                    self.users.append(queryDoc.data()["username"] as! String)
-                    self.comments.append(queryDoc.data()["text"] as! String)
-                    self.uids.append(queryDoc.data()["uid"] as! String)
-                }
-                self.tableView.reloadData()
+        comments.removeAll()
+        getDocuments(from: doc!.reference.collection("comments"), with: { (querySnap) in
+            for queryDoc in querySnap {
+                let comment = Comment(doc: queryDoc.document)
+                self.comments.append(comment)
             }
-        }
+            self.tableView.reloadData()
+        })
+    }
+    
+    private var originalTouch: CGFloat!
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        originalTouch = touches.first!.location(in: view).y
+    }
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+         glomeLogo.layer.transform = CATransform3DRotate(glomeLogo.layer.transform, touches.first!.location(in: view).y - originalTouch/10.0, 0.0, 0.0, 1.0)
     }
 }

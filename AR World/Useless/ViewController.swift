@@ -17,8 +17,8 @@ class ViewController: AuthHandlerViewController, UIScrollViewDelegate {
     var pinBorder: CAShapeLayer!
     var userBorder: CAShapeLayer!
     var topLine: CAShapeLayer!
+    var topBackground: CAShapeLayer!
     
-    var mapView: UIView?
     var camView: UIView?
     var otherView: UIView?
     var camVC: CameraViewController!
@@ -92,6 +92,20 @@ class ViewController: AuthHandlerViewController, UIScrollViewDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        changeKeysInDatabase(from: "stuff", to: "message", in: .flagged, true)
+        
+//        referralDatabase.collection("codes").getDocuments { (querySnap, err) in
+//            if let err = err {
+//                print(err)
+//            } else {
+//                if let querySnap = querySnap {
+//                    for doc in querySnap.documents {
+//                        print(doc.documentID)
+//                    }
+//                }
+//            }
+//        }
+        
         scrollView.delegate = self
         scrollView.showsHorizontalScrollIndicator = false
         scrollView.frame.origin.y = -10
@@ -105,18 +119,17 @@ class ViewController: AuthHandlerViewController, UIScrollViewDelegate {
         otherVC = OtherViewController(nibName: "OtherViewController", bundle: nil)
         otherVC.parentVC = self
         otherVC.isRootBio = true
-        mapView = mapVC.view
         camView = camVC.view
         otherView = otherVC.view
-        self.addChildViewController(mapVC)
-        self.addChildViewController(camVC)
-        self.addChildViewController(otherVC)
+        self.addChild(mapVC)
+        self.addChild(camVC)
+        self.addChild(otherVC)
         self.scrollView.addSubview(mapVC.view)
         self.scrollView.addSubview(camVC.view)
         self.scrollView.addSubview(otherVC.view)
-        mapVC.didMove(toParentViewController: self)
-        camVC.didMove(toParentViewController: self)
-        otherVC.didMove(toParentViewController: self)
+        mapVC.didMove(toParent: self)
+        camVC.didMove(toParent: self)
+        otherVC.didMove(toParent: self)
         
         var camFrame: CGRect = camVC.view.frame
         camFrame.origin.x = view.frame.width
@@ -140,12 +153,18 @@ class ViewController: AuthHandlerViewController, UIScrollViewDelegate {
             purplePin.frame.origin.y += 22
         }
         
+        topBackground = CAShapeLayer()
+        topBackground.path = CGPath(rect: CGRect(x: 0, y: 83-150, width: view.frame.width, height: 150), transform: nil)
+        topBackground.fillColor = UIColor.white.withAlphaComponent(0.5).cgColor
+        view.layer.addSublayer(topBackground)
         topLine = CAShapeLayer()
-        topLine.path = CGPath(rect: CGRect(x: 0, y: 88, width: view.frame.width, height: 5), transform: nil)
+        topLine.path = CGPath(rect: CGRect(x: 0, y: 83, width: view.frame.width, height: 3), transform: nil)
         view.layer.addSublayer(topLine)
         if !X() {
             topLine.frame.origin.y -= 22
+            topBackground.frame.origin.y -= 22
         }
+        
         
         //PopupView
         popUpView.layer.masksToBounds = true

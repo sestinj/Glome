@@ -20,6 +20,7 @@ var auth: Auth!
 var db: Firestore!
 var storage: Storage!
 var mainVC: ViewController!
+var referralDatabase: Firestore!
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate, CLLocationManagerDelegate {
@@ -34,7 +35,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, CLLocationManagerDelegate
     }
     
     
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         SwiftyGiphyAPI.shared.apiKey = "KLqJTmi5nTLVex52N6su5TULWWWjf0vv"
         applicationDelegate = self
@@ -44,10 +45,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, CLLocationManagerDelegate
         storage = Storage.storage()
         db = Firestore.firestore()
         let settings = db.settings
-        settings.areTimestampsInSnapshotsEnabled = true
         db.settings = settings
         
         auth = Auth.auth()
+        
         //Authorization
         // You need to adopt a FUIAuthDelegate protocol to receive callback
 //        auth = FUIAuth.defaultAuthUI()!
@@ -73,6 +74,22 @@ class AppDelegate: UIResponder, UIApplicationDelegate, CLLocationManagerDelegate
         let navA = UINavigationBar.appearance()
         navA.tintColor = vibrantPurple
         
+        
+        
+        //Referral Database Setup
+        let secondaryOptions = FirebaseOptions(googleAppID: "1:449196890018:ios:33b29ea025479d14", gcmSenderID: "449196890018")
+        secondaryOptions.bundleID = "NateSesti.AR-World"
+        secondaryOptions.apiKey = "AIzaSyAPpvve05saOWK7N65p59444Zm7FIqV8xA"
+        secondaryOptions.clientID = "449196890018-m69ot4ke7akkqfe2i32eqnau22sge9ta.apps.googleusercontent.com"
+        secondaryOptions.databaseURL = "https://referral-database.firebaseio.com"
+        secondaryOptions.storageBucket = "referral-database.appspot.com"
+        // Configure an alternative FIRApp.
+        FirebaseApp.configure(name: "referral", options: secondaryOptions)
+        // Retrieve a previous created named app.
+        guard let _ = FirebaseApp.app(name: "referral")
+            else { assert(false, "Could not retrieve referral app") }
+        // Retrieve a Real Time Database client configured against a specific app.
+//        referralDatabase = Firestore.firestore(app: referral)
         
         return true
     }

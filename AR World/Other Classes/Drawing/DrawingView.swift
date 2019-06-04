@@ -76,7 +76,7 @@ class DrawingView: UIView {
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         let touch: AnyObject? = touches.first
-        var newPoint = touch!.location(in: self)
+        let newPoint = touch!.location(in: self)
         
         widthFactor = CGVector(from: lastPoint, to: newPoint, multiplier: 1.0).magnitude()
         

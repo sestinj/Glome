@@ -19,22 +19,22 @@ class OtherViewController: AuthHandlerViewController, UICollectionViewDelegate, 
     public var uid: String?
     private var userData: [String:Any]?
     private var userDocRef: DocumentReference?
-    var items = [DocumentSnapshot]()
+    var items = [ARItem]()
     var parentVC: ViewController!
     
-    
-    //MARK: UITextViewDelegate
     //Biography
-    func textViewDidBeginEditing(_ textView: UITextView) {
-        textView.becomeFirstResponder()
-    }
+    //MARK: UITextViewDelegate
     func textViewShouldEndEditing(_ textView: UITextView) -> Bool {
         return true
     }
-    func textViewDidEndEditing(_ textView: UITextView) {
-        textView.resignFirstResponder()
-        let newText = textView.text
-        userDocRef!.updateData(["bioText": newText ?? ""])
+    func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+        if text == "\n" {
+            textView.resignFirstResponder()
+            let newText = textView.text
+            userDocRef!.updateData(["bioText": newText ?? ""])
+            return false
+        }
+        return true
     }
     
     
@@ -52,8 +52,11 @@ class OtherViewController: AuthHandlerViewController, UICollectionViewDelegate, 
         picker.resignFirstResponder()
         dismiss(animated: true, completion: nil)
     }
-    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : Any]) {
-        guard let selectedImage = info[UIImagePickerControllerOriginalImage] as? UIImage else {
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+// Local variable inserted by Swift 4.2 migrator.
+let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
+
+        guard let selectedImage = info[convertFromUIImagePickerControllerInfoKey(UIImagePickerController.InfoKey.originalImage)] as? UIImage else {
             return
         }
         //Save image to storage
@@ -61,7 +64,7 @@ class OtherViewController: AuthHandlerViewController, UICollectionViewDelegate, 
             if let err = err {
                 print(err)
             } else {
-                guard let png = UIImagePNGRepresentation(selectedImage) else {return}
+                guard let png = selectedImage.pngData() else {return}
                 if let imageName = docSnap!.data()!["imageName"] as? String {
                     //Delete old image - a new imageName is always created
                     storage.reference().child(imageName).delete(completion: nil)
@@ -128,20 +131,10 @@ class OtherViewController: AuthHandlerViewController, UICollectionViewDelegate, 
             guard let uid = self.uid else {return}
             if let currentUser = auth.currentUser {
                 db.collection("flagged").addDocument(data: ["stuff": "The user with uid \(uid) has been blocked by the user with uid \(currentUser.uid)"])
-                db.collection("users").whereField("uid", isEqualTo: currentUser.uid).getDocuments { (querySnap, err) in
-                    if let err = err {
-                        print(err)
-                    } else {
-                        let queryDoc = querySnap!.documents.first!
-                        if var blocked = queryDoc.data()["blocked"] as? [String] {
-                            blocked.append(uid)
-                            queryDoc.reference.updateData(["blocked": blocked])
-                        } else {
-                            queryDoc.reference.updateData(["blocked": [uid]])
-                        }
-                        self.view.checkBlockStatus(uid: uid, vc: self)
-                    }
-                }
+                getUser(uid: currentUser.uid, with: { (user) in
+                    user.blocked.append(uid)
+                    self.view.checkBlockStatus(uid: uid, vc: self)
+                })
             }
         }
         blockAlert.addAction(blockAction)
@@ -157,7 +150,7 @@ class OtherViewController: AuthHandlerViewController, UICollectionViewDelegate, 
         let usersVC = UsersTableViewController()
         let navVC = UINavigationController()
         navVC.delegate = self
-        navVC.addChildViewController(usersVC)
+        navVC.addChild(usersVC)
         usersVC.listType = listType
         usersVC.navigationItem.title = listType
         usersVC.navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .done, target: usersVC, action: #selector(usersVC.done))
@@ -189,6 +182,8 @@ class OtherViewController: AuthHandlerViewController, UICollectionViewDelegate, 
             self.view.frame.size.height += 150
         }
         
+        bioTextView.delegate = self
+        
         followingButton.layer.roundCorners()
         followersButton.layer.roundCorners()
         followButton.layer.roundCorners()
@@ -202,8 +197,6 @@ class OtherViewController: AuthHandlerViewController, UICollectionViewDelegate, 
         let recognizer = UITapGestureRecognizer(target: self, action: #selector(selectImage))
         recognizer.delegate = self
         userPhoto.layer.roundCorners()
-        userPhoto.layer.borderColor = UIColor.darkGray.withAlphaComponent(0.5).cgColor
-        userPhoto.layer.borderWidth = 1.0
         userPhoto.addGestureRecognizer(recognizer)
         loadBio()
         collectionView.delegate = self
@@ -256,61 +249,34 @@ class OtherViewController: AuthHandlerViewController, UICollectionViewDelegate, 
         
         if let uid = uid {
             //Get user's bio photo and bio text
-            db.collection("users").whereField("uid", isEqualTo: uid).getDocuments(completion: { (querySnap, err) in
-                if let err = err {
-                    print(err)
-                } else {
-                    if querySnap!.documents.count <= 0 {
-                        return
-                    }
-                    let docSnap = querySnap!.documents[0]
-                    self.userDocRef = docSnap.reference
-                    let data = docSnap.data()
-                    self.followingButton.setTitle("Following: \(String(describing: data["numberOfFollowing"] as! Int))", for: .normal)
-                    self.followersButton.setTitle("Followers: \(String(describing: data["numberOfFollowers"] as! Int))", for: .normal)
-                    if let bioText = data["bioText"] as? String {
-                        self.bioTextView.text = bioText
-                    }
-                    self.usernameLabel.text = data["name"] as? String
-                    self.navigationItem.title = data["name"] as? String
-                    if let imageName = data["imageName"] as? String {
-                        storage.reference().child(imageName).getData(maxSize: 10240*10240) { (imageData, err) in
-                            if let err = err {
-                                print(err)
-                            } else {
-                                guard let newImage = UIImage(data: imageData!) else {return}
-                                self.userPhoto.image = newImage
-                            }
-                        }
-                    }
-                    
-                    self.userDocRef!.collection("items").getDocuments { (querySnap, err) in
-                        //Load items for collection view
-                        if let err = err {
-                            print(err)
-                        } else {guard let querySnap = querySnap else {return}
-                            guard let _ = querySnap.documents.first else {return}
-                            var count = querySnap.documents.count
-                            for nameDoc in querySnap.documents {
-                                count -= 1
-                                if let name = nameDoc.data()["name"] as? String {
-                                    db.collection("items").whereField("Name", isEqualTo: name).getDocuments(completion: { (querySnap2, err2) in
-                                        if let err2 = err2 {
-                                            print(err2)
-                                        } else {
-                                            if querySnap2!.documents.count > 0 {
-                                                self.items.append(querySnap2!.documents[0] as DocumentSnapshot)
-                                            }
-                                            if count < 1 {
-                                                self.collectionView.reloadData()
-                                            }
-                                        }
-                                    })
-                                }
-                            }
-                        }
+            getUser(uid: uid, with: { (user) in
+                self.userDocRef = user.reference
+                self.followingButton.setTitle("Following: \(String(describing: user.numFollowing))", for: .normal)
+                self.followersButton.setTitle("Followers: \(String(describing: user.numFollowers))", for: .normal)
+                self.bioTextView.text = user.bioText
+                self.usernameLabel.text = user.name
+                self.navigationItem.title = user.name
+                storage.reference().child(user.imageName).getData(maxSize: 10240*10240) { (imageData, err) in
+                    if let err = err {
+                        print(err)
+                    } else {
+                        guard let newImage = UIImage(data: imageData!) else {return}
+                        self.userPhoto.image = newImage
                     }
                 }
+                
+                getDocuments(from: self.userDocRef!.collection("items"), with: { (docs) in
+                    var count = docs.count
+                    for doc in docs {
+                        count -= 1
+                        getFirstDocument(from: db.collection(named: .items).whereField("name", isEqualTo: doc.rawData![FirestoreKeys.name.rawValue]!), with: { (itm) in
+                            self.items.append(ARItem(doc: itm.document))
+                            if count < 1 {
+                                self.collectionView.reloadData()
+                            }
+                        })
+                    }
+                })
             })
         }
     }
@@ -319,7 +285,15 @@ class OtherViewController: AuthHandlerViewController, UICollectionViewDelegate, 
     //MARK: UICollectionViewDelegate/DataSource
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         if let cell = collectionView.cellForItem(at: indexPath) as? OtherCollectionViewCell {
-            cell.tintView.alpha = 0.4
+            if cell.tintView.alpha != 0.0 {
+                cell.tintView.alpha = 0.0
+                let descriptionVC = DescriptionViewController()
+                descriptionVC.camVC = parentVC.camVC
+                descriptionVC.doc = items[indexPath.row]
+                present(descriptionVC, animated: true, completion: nil)
+            } else {
+                cell.tintView.alpha = 0.4
+            }
         }
     }
     func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {
@@ -334,22 +308,21 @@ class OtherViewController: AuthHandlerViewController, UICollectionViewDelegate, 
     @objc func infoButtonPressed(sender: InfoButton) {
         let indexPath = sender.indexPath!
         let item = items[indexPath.row]
-        guard let data = item.data() else {return}
-        let alert = UIAlertController(title: data["Name"] as? String, message: nil, preferredStyle: .actionSheet)
+        let alert = UIAlertController(title: item.name, message: nil, preferredStyle: .actionSheet)
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
         let deleteAction = UIAlertAction(title: "Delete", style: .destructive) { (action) in
-            item.reference.delete()
+            item.delete()
             self.items.remove(at: sender.indexPath!.row)
             self.loadBio()
         }
         alert.addAction(deleteAction)
-        let editAction = UIAlertAction(title: "Edit", style: .default) { (action) in
-            let renameAlert = UIAlertController(title: "Edit", message: "Rename the item named \(data["Name"] as! String)", preferredStyle: .alert)
+        let renameAction = UIAlertAction(title: "Rename", style: .default) { (action) in
+            let renameAlert = UIAlertController(title: "Rename", message: "the item named \(item.name)", preferredStyle: .alert)
             renameAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
             renameAlert.addTextField(configurationHandler: nil)
             let renameAction = UIAlertAction(title: "Rename", style: .default, handler: { (action) in
                 if let textField = renameAlert.textFields!.first {
-                    item.reference.updateData(["Name": textField.text!])
+                    item.name = textField.text!
                     if let cell = self.collectionView.cellForItem(at: sender.indexPath!) as? OtherCollectionViewCell {
                         cell.nameLabel.text = textField.text!
                     }
@@ -358,15 +331,15 @@ class OtherViewController: AuthHandlerViewController, UICollectionViewDelegate, 
             renameAlert.addAction(renameAction)
             self.present(renameAlert, animated: true, completion: nil)
         }
-        alert.addAction(editAction)
+        alert.addAction(renameAction)
         present(alert, animated: true, completion: nil)
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "otherReuseIdentifier", for: indexPath) as! OtherCollectionViewCell
         cell.layer.borderColor = UIColor.black.cgColor
-        cell.layer.borderWidth = 1
-        cell.layer.cornerRadius = 10
+        cell.layer.borderWidth = 0.5
+        cell.layer.cornerRadius = 0 //10
         cell.layer.masksToBounds = true
         
         //Info button
@@ -377,20 +350,18 @@ class OtherViewController: AuthHandlerViewController, UICollectionViewDelegate, 
             cell.infoButton.alpha = 0.0
         }
         
+        let item = items[indexPath.row]
         
-        guard let data = items[indexPath.row].data() else {return cell}
-        let name = data["Name"] as? String
-        cell.nameLabel.text = name
+        cell.nameLabel.text = item.name
         //Cell depends on media type
-        let mediaType = data["Media Type"] as! String
-        switch mediaType {
-        case "Text":
+        switch item.mediaType {
+        case .text:
             break
-        case "Gif":
+        case .gif:
             cell.imageView.image = UIImage(named: "giphy")
-        case "Photo":
+        case .photo(let photoName):
 //            cell.nameLabel.backgroundColor = UIColor.white.withAlphaComponent(0.5)
-            storage.reference().child(data["Photo Name"] as! String).getData(maxSize: 10240*10240) { (imageData, err) in
+            storage.reference().child(photoName).getData(maxSize: 10240*10240) { (imageData, err) in
                 if let err = err {
                     print(err)
                 } else {
@@ -399,12 +370,20 @@ class OtherViewController: AuthHandlerViewController, UICollectionViewDelegate, 
                     cell.nameLabel.text = ""
                 }
             }
-        case "Shape":
+        case .shape:
             cell.imageView.image = UIImage(named: "purpleCube3D")
-        default:
-            break
         }
         
         return cell
     }
+}
+
+// Helper function inserted by Swift 4.2 migrator.
+fileprivate func convertFromUIImagePickerControllerInfoKeyDictionary(_ input: [UIImagePickerController.InfoKey: Any]) -> [String: Any] {
+	return Dictionary(uniqueKeysWithValues: input.map {key, value in (key.rawValue, value)})
+}
+
+// Helper function inserted by Swift 4.2 migrator.
+fileprivate func convertFromUIImagePickerControllerInfoKey(_ input: UIImagePickerController.InfoKey) -> String {
+	return input.rawValue
 }

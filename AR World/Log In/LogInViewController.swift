@@ -39,7 +39,7 @@ class LogInViewController: AuthHandlerViewController {
                                 guard let rootVC = applicationDelegate.window!!.rootViewController else {return}
                                 var optionalOtherVC: OtherViewController?
                                 
-                                for child in rootVC.childViewControllers {
+                                for child in rootVC.children {
                                     if let child = child as? OtherViewController {
                                         optionalOtherVC = child
                                     }
@@ -64,7 +64,7 @@ class LogInViewController: AuthHandlerViewController {
                                     guard let rootVC = applicationDelegate.window!!.rootViewController else {return}
                                     var optionalOtherVC: OtherViewController?
                                     
-                                    for child in rootVC.childViewControllers {
+                                    for child in rootVC.children {
                                         if let child = child as? OtherViewController {
                                             optionalOtherVC = child
                                         }
@@ -82,7 +82,7 @@ class LogInViewController: AuthHandlerViewController {
                                                     print(error)
                                                 }
                                             }
-                                            db.collection("users").addDocument(data: ["uid":user1.user.uid, "name":displayName, "bioText":"", "followers":[String](), "following":[String](), "blocked":[String](), "imageName":"", "numberOfFollowers":0, "numberOfFollowing":0])
+                                            db.collection("users").addDocument(data: ["uid":user1.user.uid, "username":displayName, "bioText":"", "followers":[String](), "following":[String](), "blocked":[String](), "imageName":"", "numberOfFollowers":0, "numberOfFollowing":0])
                                             
                                             otherVC.uid = user1.user.uid
                                             otherVC.loadBio()
@@ -96,6 +96,7 @@ class LogInViewController: AuthHandlerViewController {
                         }
                     }
                 })
+                passwordAlert.textFields!.first!.isSecureTextEntry = true
                 self.present(passwordAlert, animated: true, completion: nil)
             }
         }

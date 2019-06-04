@@ -15,7 +15,7 @@ class AuthHandlerViewController: UIViewController {
     var handle: AuthStateDidChangeListenerHandle!
     override func viewDidAppear(_ animated: Bool) {
         handle = Auth.auth().addStateDidChangeListener { (auth, user) in
-            // ...
+            // Why is this class here?
         }
     }
     override func viewDidDisappear(_ animated: Bool) {

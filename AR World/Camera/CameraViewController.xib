@@ -14,7 +14,6 @@
             <connections>
                 <outlet property="arScene" destination="BEM-zK-ejb" id="dkq-Bf-P12"/>
                 <outlet property="cameraButton" destination="FAg-rI-U49" id="qP7-yf-3pM"/>
-                <outlet property="doubleTapRecognizer" destination="vv6-1n-duP" id="sSV-sF-bWY"/>
                 <outlet property="eyeButton" destination="dv1-qS-6d7" id="gD1-YU-g2K"/>
                 <outlet property="fxViewEye" destination="eQ8-Bk-rt3" id="OYa-XY-PRC"/>
                 <outlet property="fxViewPlus" destination="AR9-BX-INf" id="7yJ-iF-h8R"/>
@@ -36,9 +35,6 @@
                     <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     <gestureRecognizers/>
-                    <connections>
-                        <outletCollection property="gestureRecognizers" destination="vv6-1n-duP" appends="YES" id="Hmr-wE-ZXM"/>
-                    </connections>
                 </arscnView>
                 <visualEffectView opaque="NO" contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="AR9-BX-INf">
                     <rect key="frame" x="154" y="560" width="75" height="75"/>
@@ -100,7 +96,7 @@
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <fontDescription key="fontDescription" name=".AppleColorEmojiUI" family=".Apple Color Emoji UI" pointSize="30"/>
                                 <color key="tintColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                <state key="normal" image="eye">
+                                <state key="normal" image="camera">
                                     <color key="titleColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 </state>
                                 <connections>
@@ -118,14 +114,9 @@
             <viewLayoutGuide key="safeArea" id="fnl-2z-Ty3"/>
             <point key="canvasLocation" x="32.799999999999997" y="52.623688155922046"/>
         </view>
-        <tapGestureRecognizer id="vv6-1n-duP">
-            <connections>
-                <action selector="doubleTap:" destination="-1" id="JmE-wN-Dzf"/>
-            </connections>
-        </tapGestureRecognizer>
     </objects>
     <resources>
         <image name="GlomeLogo" width="512" height="512"/>
-        <image name="eye" width="256" height="256"/>
+        <image name="camera" width="160" height="160"/>
     </resources>
 </document>

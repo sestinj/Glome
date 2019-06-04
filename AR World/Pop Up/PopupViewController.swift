@@ -75,7 +75,8 @@ class PopupViewController: AuthHandlerViewController, UIPickerViewDelegate, UIPi
         self.hide()
     }
     @objc func addShape() {
-        guard let color = colorButton!.layer.backgroundColor else {return}
+        guard let oColor = colorButton!.layer.backgroundColor else {self.hide();return}
+        guard let color = oColor.converted(to: CGColorSpaceCreateDeviceRGB(), intent: CGColorRenderingIntent.defaultIntent, options: nil) else {self.hide();return}
         self.parentVC.camVC.addTextParamColor = UIColor(cgColor: color)
         self.parentVC.camVC.addShape()
         self.hide()
@@ -113,7 +114,7 @@ class PopupViewController: AuthHandlerViewController, UIPickerViewDelegate, UIPi
         navCtrl.popoverPresentationController?.sourceView = view
         navCtrl.popoverPresentationController?.sourceRect = view.bounds
         navCtrl.preferredContentSize = colorSelectionController.view.systemLayoutSizeFitting(
-            UILayoutFittingCompressedSize
+            UIView.layoutFittingCompressedSize
         )
         
         colorSelectionController.delegate = self
@@ -122,7 +123,7 @@ class PopupViewController: AuthHandlerViewController, UIPickerViewDelegate, UIPi
         if UIUserInterfaceSizeClass.compact == self.traitCollection.horizontalSizeClass {
             let doneBtn: UIBarButtonItem = UIBarButtonItem(
                 title: NSLocalizedString("Done", comment: ""),
-                style: UIBarButtonItemStyle.done,
+                style: UIBarButtonItem.Style.done,
                 target: self,
                 action: #selector(dismissColorPicker)
             )
@@ -145,6 +146,7 @@ extension PopUpType {
         //Add the done button for all types
         let doneButton = UIButton(frame: CGRect(x: vc.view.frame.midX - 50, y: 10, width: 100, height: 20))
         doneButton.setTitle("Done", for: .normal)
+        doneButton.causesImpact(.light)
         doneButton.setTitleColor(.black, for: .normal)
         doneButton.layer.roundCorners()
         doneButton.layer.backgroundColor = UIColor.white.cgColor

@@ -31,7 +31,8 @@ class UsernameLinkButton: UIButton, UINavigationControllerDelegate {
         //Go to user profile with UINavigationController
         guard let uid = uid else {
             print("User ID not found for UsernameLinkButton.")
-            return}
+            return
+        }
         let otherVC = OtherViewController()
         otherVC.uid = uid
         

@@ -11,8 +11,9 @@ import ARKit
 import CoreLocation
 import Firebase
 import SwiftyGiphy
+import ReplayKit
 
-class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate, UIGestureRecognizerDelegate, SwiftyGiphyViewControllerDelegate {
+class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate, UIGestureRecognizerDelegate, SwiftyGiphyViewControllerDelegate, RPPreviewViewControllerDelegate {
     
     //MARK: SwiftyGiphyViewControllerDelegate
     func giphyControllerDidSelectGif(controller: SwiftyGiphyViewController, item: GiphyItem) {
@@ -21,7 +22,6 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
             addItemDocument(data: ["Media Type": "Gif", "Gif URL": url.absoluteString])
         }
     }
-    
     func giphyControllerDidCancel(controller: SwiftyGiphyViewController) {
         controller.dismiss(animated: true, completion: nil)
     }
@@ -29,19 +29,54 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
     
     var parentVC: ViewController!
     var nearItems = [CLLocation]()
-    var nodesDictionary = [SCNNode:DocumentSnapshot]()
-    var documents = [DocumentSnapshot]()
+    var nodesDictionary = [SCNNode:ARItem]()
+    var documents = [ARItem]()
     
     //MARK: Outlets
-    @IBOutlet var doubleTapRecognizer: UITapGestureRecognizer!
-    @IBAction func doubleTap(_ sender: UITapGestureRecognizer) {
-        if !buttonsAreVisible {
-            fxViewEye.alpha = 1.0
-            fxViewReset.alpha = 1.0
-            fxViewPlus.alpha = 1.0
-            buttonsAreVisible = true
+    @objc func longRecognizer(_ sender: UILongPressGestureRecognizer) {
+        guard sender.state == .began || sender.state == .ended else {return}
+        if recordingReady {
+            recordingReady = false
+            startRecording()
+        } else if recording {
+            stopRecording()
         }
     }
+    @objc func tapRecognizer(_ sender: UITapGestureRecognizer) {
+        if !recording && !recordingReady {
+            //If content is touched, open its description views
+            let position = sender.location(in: arScene)
+            guard let first = arScene.hitTest(position, options: nil).first else {return}
+            let node = first.node
+            guard let document = nodesDictionary[node] else {return}
+            
+            let descriptionVC = DescriptionViewController()
+            descriptionVC.doc = document
+            descriptionVC.camVC = self
+            present(descriptionVC, animated: true, completion: nil)
+        }
+        if recordingReady {
+            //Take photo
+            recordingLabel.alpha = 0.0
+            recordingCircle.opacity = 0.0
+            
+            let img = arScene.snapshot()
+            let activity = UIActivityViewController(activityItems: [img], applicationActivities: nil)
+            present(activity, animated: true, completion: nil)
+            
+            let flash = CAShapeLayer()
+            flash.path = CGPath(rect: UIApplication.shared.keyWindow!.layer.frame, transform: nil)
+            flash.fillColor = UIColor.white.cgColor
+            UIApplication.shared.keyWindow!.layer.addSublayer(flash)
+            let _ = Timer.scheduledTimer(timeInterval: 0.25, target: flash, selector: #selector(flash.remove), userInfo: nil, repeats: false)
+            
+            recordingReady = false
+            recording = false
+            showButtonsAfterRecording()
+        }
+    }
+    var long: UILongPressGestureRecognizer!
+    var short: UITapGestureRecognizer!
     @IBOutlet weak var arScene: ARSCNView!
     @IBOutlet weak var fxViewReset: UIVisualEffectView!
     @IBOutlet weak var fxViewPlus: UIVisualEffectView!
@@ -50,13 +85,14 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
     @IBOutlet weak var eyeButton: UIButton!
     var buttonsAreVisible = true
     @IBAction func eyePressed(_ sender: UIButton) {
-        fxViewEye.alpha = 0.0
-        fxViewReset.alpha = 0.0
-        fxViewPlus.alpha = 0.0
-        buttonsAreVisible = false
+        hideButtonsForRecording()
     }
     @IBOutlet weak var cameraButton: UIButton!
     @IBAction func resetButtonPressed(_ sender: UIButton) {
+//        let s = SearchViewController()
+//        let nav = UINavigationController(rootViewController: s)
+//        nav.delegate = self
+//        present(nav, animated: true, completion: nil)
         if !(sender == cameraButton) {
             loadNearItems()
         }
@@ -112,12 +148,16 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
             }
         }
     }
+    
+    
+    public var gifVC: SwiftyGiphyViewController!
     @objc func selectGif() {
         shortenCameraButton()
-        let gifVC = SwiftyGiphyViewController()
+        gifVC = SwiftyGiphyViewController()
         gifVC.delegate = self
-        let navVC = UINavigationController()
-        navVC.viewControllers = [gifVC]
+        
+        
+        let navVC = UINavigationController(rootViewController: gifVC)
         navVC.delegate = self
         self.present(navVC, animated: true, completion: nil)
     }
@@ -145,7 +185,7 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
     var addTextParamFont: String!
     var drawVC: DrawingViewController!
     @objc func addText() {
-        self.addItemDocument(data: ["Media Type": "Text", "Text": addTextParamText, "Color": [Int(addTextParamColor.r()*255), Int(addTextParamColor.g()*255), Int(addTextParamColor.b()*255)], "Font": addTextParamFont])
+        self.addItemDocument(data: ["Media Type": "Text", "Text": addTextParamText as Any, "Color": [Int(addTextParamColor.r()*255), Int(addTextParamColor.g()*255), Int(addTextParamColor.b()*255)], "Font": addTextParamFont as Any])
     }
     @objc func addDrawing() {
         guard let image = drawVC.getImage() else {drawVC.dismiss(animated: true, completion: nil);return}
@@ -153,7 +193,7 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
         let root = storage.reference()
         let name = "\(CGFloat(low: 0.0, high: 100000.0))"
         let newRef = root.child(name)
-        guard let png = UIImagePNGRepresentation(image) else {return}
+        guard let png = image.pngData() else {return}
         newRef.putData(png, metadata: nil) { (metaData, err) in
             if let err = err {
                 print(err)
@@ -162,7 +202,7 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
         
         dismiss(animated: true, completion: nil)
         //Add document to Firebase/Firestore
-        addItemDocument(data: ["Photo Name": name, "Media Type": "Photo"])
+        addItemDocument(data: ["photoid": name, "Media Type": "Photo"])
     }
     
     
@@ -174,8 +214,11 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
         picker.delegate = self
         present(picker, animated: true, completion: nil)
     }
-    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : Any]) {
-        guard let selectedImage = info[UIImagePickerControllerOriginalImage] as? UIImage else {
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+// Local variable inserted by Swift 4.2 migrator.
+let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
+
+        guard let selectedImage = info[convertFromUIImagePickerControllerInfoKey(UIImagePickerController.InfoKey.originalImage)] as? UIImage else {
             return
         }
         
@@ -183,7 +226,7 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
         let root = storage.reference()
         let name = "\(CGFloat(low: 0.0, high: 100000.0))"
         let newRef = root.child(name)
-        guard let png = UIImagePNGRepresentation(selectedImage) else {return}
+        guard let png = selectedImage.pngData() else {return}
         newRef.putData(png, metadata: nil) { (metaData, err) in
             if let err = err {
                 print(err)
@@ -192,7 +235,7 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
         
         dismiss(animated: true, completion: nil)
         //Add document to Firebase/Firestore
-        addItemDocument(data: ["Photo Name": name, "Media Type": "Photo"])
+        addItemDocument(data: ["photoid": name, "Media Type": "Photo"])
     }
     func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
         picker.resignFirstResponder()
@@ -203,6 +246,24 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
     //MARK: viewDidLoad()
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        changeKeysInDatabase(from: "bioText", to: "biotext", in: .users, true)
+        changeKeysInDatabase(from: "imageName", to: "photoid", in: .users, true)
+        
+        recordingLabel = UILabel(frame: CGRect(x: view.frame.midX - 125, y: view.frame.midY - 50, width: 250, height: 100))
+        recordingLabel.text = "Hold anywhere to record. Tap for a picture."
+        recordingLabel.font = UIFont.systemFont(ofSize: 20)
+        recordingLabel.textColor = .white
+        recordingLabel.numberOfLines = 2
+        recordingLabel.textAlignment = .center
+        recordingLabel.alpha = 0.0
+        view.addSubview(recordingLabel)
+        
+        recordingCircle = CAShapeLayer()
+        recordingCircle.fillColor = UIColor.red.cgColor
+        recordingCircle.path = CGPath(ellipseIn: CGRect(origin: CGPoint(x: view.frame.maxX - 25, y: view.frame.minY + 25), size: CGSize(20)), transform: nil)
+        recordingCircle.opacity = 0.0
+        view.layer.addSublayer(recordingCircle)
         
         if X() {
             view.frame.size.height += 150
@@ -215,9 +276,13 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
         arScene.delegate = self
         loadNearItems()
         
+        eyeButton.causesImpact(.light)
+        resetButton.causesImpact(.light)
+        
         fxViewPlus.layer.roundCorners()
         fxViewEye.layer.roundCorners()
         cameraButton.tintColor = .white
+        cameraButton.causesImpact(.medium)
         resetButton.tintColor = .white
         eyeButton.tintColor = .white
         fxViewPlus.layer.borderColor = UIColor.white.cgColor
@@ -228,30 +293,28 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
         fxViewPlus.layer.borderWidth = 2
         fxViewReset.layer.roundCorners()
         
-        //Gesture recognizer
-        doubleTapRecognizer.numberOfTapsRequired = 2
-        doubleTapRecognizer.delegate = self
+        
+        //Gestures
+        long = UILongPressGestureRecognizer(target: self, action: #selector(longRecognizer(_:)))
+        long.delegate = self
+        view.addGestureRecognizer(long)
+        short = UITapGestureRecognizer(target: self, action: #selector(tapRecognizer(_:)))
+        short.delegate = self
+        view.addGestureRecognizer(short)
     }
     
     
     //MARK: Functions
     func cleanItems() {
-        //Removes all items that have been present for more than 24 hours
+        //Removes all items that have been present for more than 24 hours - THIS SHOULD BE HAPPENING SERVERSIDE!!
         if arc4random_uniform(50) > 0 {
-            db.collection("items").getDocuments { (querySnap, err) in
-                if let err = err {
-                    print(err)
-                } else {
-                    guard let querySnap = querySnap else {return}
-                    guard let _ = querySnap.documents.first else {return}
-                    for doc in querySnap.documents {
-                        if let time = doc.data()["time"] as? Timestamp{
-                            let date = Date()
-                            let inter = date.timeIntervalSince(time.dateValue())
-                            if inter > 60*60*24 {
-                                doc.reference.delete()
-                            }
-                        }
+            getDocuments(from: db.collection("items")) { (docs) in
+                for doc in docs {
+                    let item = ARItem(doc: doc.document)
+                    let date = Date()
+                    let inter = date.timeIntervalSince(item.date)
+                    if inter > 60*60*24 {
+                        doc.reference.delete()
                     }
                 }
             }
@@ -287,20 +350,6 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
         return vec
     }
     
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        //If content is touched, open its description views
-        let position = touches.first!.location(in: arScene)
-        guard let first = arScene.hitTest(position, options: nil).first else {return}
-        let node = first.node
-        guard let document = nodesDictionary[node] else {return}
-        
-        let descriptionVC = DescriptionViewController()
-        descriptionVC.doc = document
-        
-        let navVC = UINavigationController(rootViewController: descriptionVC)
-        navVC.delegate = self
-        present(navVC, animated: true, completion: nil)
-    }
     
     
     func addItemDocument(data: [String:Any]) {
@@ -324,19 +373,11 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
         alert.addTextField(configurationHandler: nil)
         let addAction = UIAlertAction(title: "Next", style: .default) { (action) in
             guard let field = alert.textFields!.first else {return}
-            newData["Name"] = field.text!
+            newData["name"] = field.text!
             //Add doc id to user
             let newID = db.collection("items").addDocument(data: newData).documentID
-            db.collection("users").whereField("uid", isEqualTo: currentUser.uid).getDocuments(completion: { (querySnap, err) in
-                if let err = err {
-                    print(err)
-                } else {
-                    if querySnap!.documents.count > 0 {
-                        let ref = querySnap!.documents[0].reference
-                        ref.collection("items").document(newID).setData(["name":field.text!])
-                    }
-                    self.loadNearItems()
-                }
+            getUser(uid: currentUser.uid, with: { (user) in
+                user.reference.collection("items").document(newID).setData(["name":field.text!])
             })
         }
         alert.addAction(addAction)
@@ -345,129 +386,125 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
     
     private func showIntro() {
 //        let wData: [String:Any] = ["Media Type":"Photo", "uid": "VlgVcTvcUfW2PdGp17xS1O8z2vG2", "Name": "Glome", "Photo Name": "iTunesArtwork@1x.png", "coordinates": GeoPoint(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude)]
-        db.collection("items").whereField("Photo Name", isEqualTo: "iTunesArtwork@1x.png").getDocuments { (querySnap, err) in
-            if let err = err {
-                print(err)
-            } else {
-                guard let querySnap = querySnap else {return}
-                guard let doc = querySnap.documents.first else {return}
-                var data = doc.data()
-                data["coordinates"] = GeoPoint(latitude: location!.coordinate.latitude, longitude: location!.coordinate.longitude)
-                let newNode = self.createNewNode(data: data)
-                self.nodesDictionary[newNode] = doc
-            }
-        }
+        getFirstDocument(from: db.collection(named: .items).whereField("photoid", isEqualTo: "iTunesArtwork@1x.png"), with: { (doc) in
+            let item = ARItem(doc: doc.document)
+            item.coordinates = location!.coordinate
+            let newNode = self.createNewNode(item: item)
+            self.nodesDictionary[newNode] = item
+        })
         defaults.set(false, forKey: "intro")
     }
+    
     @objc func loadNearItems() {
-        nodesDictionary = [SCNNode:DocumentSnapshot]()
+        nodesDictionary = [SCNNode:ARItem]()
         cleanItems()
         if defaults.bool(forKey: "intro") {
             showIntro()
         }
         
         guard let query = queryInRadius(miles: 1.0/32.0, "items", "coordinates") else {let _ = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(loadNearItems), userInfo: nil, repeats: false);return}
-        query.getDocuments { (querySnap, err) in
-            if let err = err {
-                print(err)
-            } else {
-                //Is this returning from the function or the closure? Might want to make this an if let statement.
-                guard let querySnap = querySnap else {return}
-                guard let _ = querySnap.documents.first else {return}
-                for doc in querySnap.documents {
-                    let geoPoint = doc.data()["coordinates"] as! GeoPoint
-                    let loc = CLLocation(latitude: geoPoint.latitude, longitude: geoPoint.longitude)
-                    
-//                    if location.distance(from: loc) < 100 {
-                        let newNode = self.createNewNode(data: doc.data())
-                        self.nodesDictionary[newNode] = doc
-//                    }
+        getDocuments(from: query) { (querySnap) in
+            for doc in querySnap {
+                let item = ARItem(doc: doc.document)
+                let loc = CLLocation(latitude: item.coordinates.latitude, longitude: item.coordinates.longitude)
+                //THIS SHOULDN"T NEED TO BE HERE> FIND THE WAY TO USE THAT QUERY IN RADIUS THING _ ITS VITAL WHEN DATA GETS BIG
+                if location!.distance(from: loc) < 100 {
+                    let newNode = self.createNewNode(item: item)
+                    self.nodesDictionary[newNode] = item
                 }
-                self.resetTracking()
             }
+            self.resetTracking()
         }
+//        query.getDocuments { (querySnap, err) in
+//            if let err = err {
+//                print(err)
+//            } else {
+//                //Is this returning from the function or the closure? Might want to make this an if let statement.
+//                guard let querySnap = querySnap else {return}
+//                guard let _ = querySnap.documents.first else {return}
+//                for doc in querySnap.documents {
+//                    let geoPoint = doc.data()["coordinates"] as! GeoPoint
+//                    let loc = CLLocation(latitude: geoPoint.latitude, longitude: geoPoint.longitude)
+//                    //THIS SHOULDN"T NEED TO BE HERE> FIND THE WAY TO USE THAT QUERY IN RADIUS THING _ ITS VITAL WHEN DATA GETS BIG
+//                    if location!.distance(from: loc) < 100 {
+//                        let newNode = self.createNewNode(data: doc.data())
+//                        self.nodesDictionary[newNode] = doc
+//                    }
+//                }
+//                self.resetTracking()
+//            }
+//        }
     }
     
     
-    func createNewNode(data: [String:Any]?) -> SCNNode {
-        //Creates a test cube and decides its position based on the user's location
-        guard let data = data else {return SCNNode()}
-        //Is it safe to just return empty SCNNodes()?
-        guard let mediaType = data["Media Type"] as? String else {return SCNNode()}
+    func createNewNode(item: ARItem) -> SCNNode {
         
-        var item: SCNNode!
+        var node: SCNNode!
         
-        switch mediaType {
-        case "Text":
-            let geo = SCNText(string: data["Text"] as? String, extrusionDepth: 0.25)
-            if let font = data["Font"] as? String {
-                geo.font = UIFont(name: font, size: 20)
-            }
+        switch item.mediaType {
+        case .text(let font, let color, let text):
+            let geo = SCNText(string: text, extrusionDepth: 0.25)
+            geo.font = UIFont(name: font, size: 14)
             //Ask for text's font
             
             let mat = SCNMaterial()
-            if let colorArray = data["Color"] as? [Int] {
-                mat.diffuse.contents = UIColor(r: colorArray[0], g: colorArray[1], b: colorArray[2])
-            } else {
-                mat.diffuse.contents = UIColor.black
-            }
+            mat.diffuse.contents = color
+            
             mat.isDoubleSided = true
             geo.firstMaterial = mat
-            item = SCNNode(geometry: geo)
-            item.scale = SCNVector3(x: 0.2, y: 0.2, z: 0.2)
-        case "Gif":
-            let gifImage = UIImage.gif(url: data["Gif URL"] as! String)
+            node = SCNNode(geometry: geo)
+            node.scale = SCNVector3(x: 0.2, y: 0.2, z: 0.2)
+        case .gif(let url):
+            let gifImage = UIImage.gif(url: url.absoluteString)
             let gifImageView = UIImageView(image: gifImage)
             let gifPlane = SCNPlane(width: 1.0, height: 1.0)
             let material = SCNMaterial()
             material.diffuse.contents = gifImageView.layer
             material.isDoubleSided = true
             gifPlane.firstMaterial = material
-            item = SCNNode(geometry: gifPlane)
+            node = SCNNode(geometry: gifPlane)
             
-        case "Photo":
+        case .photo(let photoName):
             let geo = SCNPlane(width: 1.0, height: 1.0)
             let mat = SCNMaterial()
             mat.diffuse.contents = vibrantPurple
             mat.isDoubleSided = true
             geo.firstMaterial = mat
-            item = SCNNode(geometry: geo)
+            node = SCNNode(geometry: geo)
             //Load photo from Firebase/Storage
-            storage.reference().child(data["Photo Name"] as! String).getData(maxSize: 10240*10240) { (imageData, err) in
+            storage.reference().child(photoName).getData(maxSize: 10240*10240) { (imageData, err) in
                 if let err = err {
                     print(err)
                 } else {
                     guard let newImage = UIImage(data: imageData!) else {return}
-                    item.geometry!.materials.first!.diffuse.contents = newImage
+                    node.geometry!.materials.first!.diffuse.contents = newImage
                 }
             }
-        case "Shape":
+        case .shape(let color):
             let geo = SCNBox(width: 0.1, height: 0.1, length: 0.1, chamferRadius: 0)
             let mat1 = SCNMaterial()
-            if let colorArray = data["Color"] as? [Int] {
-                mat1.diffuse.contents = UIColor(r: colorArray[0], g: colorArray[1], b: colorArray[2])
-            } else {
-                mat1.diffuse.contents = vibrantPurple
-            }
+            mat1.diffuse.contents = color
+                
             geo.firstMaterial = mat1
-            item = SCNNode(geometry: geo)
+            node = SCNNode(geometry: geo)
+        }
+        
+        let position: SCNVector3!
+        if item.nonGeo {
+            //For single items and introductory items
+            position = SCNVector3(0, 0, -1)
+        } else {
+            position = decidePosition(fromCoordinates: CLLocation(latitude: item.coordinates.latitude, longitude: item.coordinates.longitude))
+        }
+        node.position = position!
+        switch item.mediaType {
+        case .text:
+            node.position.y -= 0.5
         default:
-            let geo = SCNBox(width: 0.1, height: 0.1, length: 0.1, chamferRadius: 0)
-            let mat1 = SCNMaterial()
-            mat1.diffuse.contents = vibrantPurple
-            geo.firstMaterial = mat1
-            item = SCNNode(geometry: geo)
+            break
         }
         
-        
-        guard let coordinates = data["coordinates"] as? GeoPoint else {return SCNNode()}
-        let position = decidePosition(fromCoordinates: CLLocation(latitude: coordinates.latitude, longitude: coordinates.longitude))
-        item.position = position!
-        if mediaType == "Text" {
-            item.position.y -= 0.5
-        }
-        
-        return item
+        return node
     }
     
     func resetTracking() {
@@ -486,12 +523,122 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
     
     //MARK:BETA ZONE: __________________________________________
     @objc func loadItemStatic() {
+        nodesDictionary = [SCNNode:ARItem]()
         //For previewing new content
         //Adds item directly in front of the camera, no matter how it moves or rotates
     }
+    public var singleDocToLoad: ARItem!
     @objc func loadItemNonGeo() {
+        nodesDictionary = [SCNNode:ARItem]()
+        singleDocToLoad.nonGeo = true
+        let node = createNewNode(item: singleDocToLoad)
+        self.nodesDictionary[node] = singleDocToLoad
+        parentVC.scrollView.scrollRectToVisible(parentVC.camVC.view.frame, animated: false)
+        resetTracking()
         //For viewing remotely from bio, etc...
         //Adds item in front of camera, not based on geography, but it stays in that spot when phone moves (normal AR mode)
     }
     //MARK: Recording
+    var recordingCircle: CAShapeLayer!
+    var recordingLabel: UILabel!
+    var recording = false
+    var recordingReady = false
+    let recorder = RPScreenRecorder.shared()
+    func hideButtonsForRecording() {
+        recordingReady = true
+        //Opacities
+        recordingLabel.alpha = 1.0
+        parentVC.scrollView.isScrollEnabled = false
+        fxViewEye.alpha = 0.0
+        fxViewReset.alpha = 0.0
+        fxViewPlus.alpha = 0.0
+        buttonsAreVisible = false
+        recordingCircle.opacity = 1.0
+        parentVC.topBackground.opacity = 0.0
+        parentVC.topLine.opacity = 0.0
+        parentVC.appTitle.alpha = 0.0
+        parentVC.purplePin.alpha = 0.0
+        parentVC.userIcon.alpha = 0.0
+        
+        
+    }
+    
+    func showButtonsAfterRecording() {
+        recordingCircle.removeAnimation(forKey: "recording")
+        recordingLabel.alpha = 0.0
+        //Opacities
+        parentVC.scrollView.isScrollEnabled = true
+        fxViewEye.alpha = 1.0
+        fxViewReset.alpha = 1.0
+        fxViewPlus.alpha = 1.0
+        buttonsAreVisible = true
+        recordingCircle.opacity = 0.0
+        parentVC.topBackground.opacity = 0.5
+        parentVC.topLine.opacity = 1.0
+        parentVC.appTitle.alpha = 1.0
+        parentVC.purplePin.alpha = 1.0
+        parentVC.userIcon.alpha = 1.0
+    }
+    @objc func startRecording() {
+        recording = true
+        recordingLabel.alpha = 0.0
+        let recordingAnimation = CABasicAnimation(keyPath: #keyPath(CALayer.opacity))
+        recordingAnimation.fromValue = 1.0
+        recordingAnimation.toValue = 0.0
+        recordingAnimation.duration = 0.75
+        recordingAnimation.autoreverses = true
+        recordingAnimation.repeatCount = Float.infinity
+        recordingCircle.add(recordingAnimation, forKey: "recording")
+        guard recorder.isAvailable else {
+            print("Recording is not available at this time.")
+            return
+        }
+        recorder.startRecording{ [] (error) in
+            guard error == nil else {
+                print("There was an error starting the recording.")
+                return
+            }
+            print("Started Recording Successfully")
+        }
+    }
+    
+    @objc func stopRecording() {
+        recording = false
+        showButtonsAfterRecording()
+        recorder.stopRecording { [unowned self] (preview, error) in
+            print("Stopped recording")
+            guard preview != nil else {
+                print("Preview controller is not available.")
+                return
+            }
+            let alert = UIAlertController(title: "Recording Finished", message: "Would you like to edit or delete your recording?", preferredStyle: .alert)
+            let deleteAction = UIAlertAction(title: "Delete", style: .destructive, handler: { (action: UIAlertAction) in
+                self.recorder.discardRecording(handler: { () -> Void in
+                    print("Recording suffessfully deleted.")
+                })
+            })
+            let editAction = UIAlertAction(title: "Edit", style: .default, handler: { (action: UIAlertAction) -> Void in
+                preview?.previewControllerDelegate = self
+                self.present(preview!, animated: true, completion: nil)
+            })
+            alert.addAction(editAction)
+            alert.addAction(deleteAction)
+            self.present(alert, animated: true, completion: nil)
+        }
+    }
+    
+    func previewControllerDidFinish(_ previewController: RPPreviewViewController) {
+        dismiss(animated: true)
+    }
+    
+}
+
+// Helper function inserted by Swift 4.2 migrator.
+fileprivate func convertFromUIImagePickerControllerInfoKeyDictionary(_ input: [UIImagePickerController.InfoKey: Any]) -> [String: Any] {
+	return Dictionary(uniqueKeysWithValues: input.map {key, value in (key.rawValue, value)})
+}
+
+// Helper function inserted by Swift 4.2 migrator.
+fileprivate func convertFromUIImagePickerControllerInfoKey(_ input: UIImagePickerController.InfoKey) -> String {
+	return input.rawValue
 }
