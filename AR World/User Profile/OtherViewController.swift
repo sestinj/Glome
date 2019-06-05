@@ -180,6 +180,7 @@ let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
         
         if X() {
             self.view.frame.size.height += 150
+            collectionView.frame.size.height += 150
         }
         
         bioTextView.delegate = self

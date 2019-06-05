@@ -202,13 +202,13 @@ public class ARItem: UserPost {
     
     override public init(doc: DocumentSnapshot) {
         let data = doc.data()!
-        name = data["name"] as? String ?? ""
+        name = data["name"] as! String
         comments = [Comment]()
         likes = [Like]()
         date = (data["date"] as? Timestamp ?? Timestamp(date: Date())).dateValue()
         mediaType = MediaTypes(data: data)
         coordinates = (data[FirestoreKeys.coordinates.rawValue] as! GeoPoint).coordinates
-        username = data[FirestoreKeys.username.rawValue] as? String ?? ""
+        username = data[FirestoreKeys.username.rawValue] as! String
         nonGeo = data["nonGeo"] as? Bool ?? false
         super.init(doc: doc)
         getDocuments(from: doc.reference.collection("comments")) { (comments) in

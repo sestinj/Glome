@@ -247,8 +247,17 @@ let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        changeKeysInDatabase(from: "bioText", to: "biotext", in: .users, true)
-        changeKeysInDatabase(from: "imageName", to: "photoid", in: .users, true)
+//        changeKeysInDatabase(from: "bioText", to: "biotext", in: .users, true)
+//        changeKeysInDatabase(from: "imageName", to: "photoid", in: .users, true)
+//        changeKeysInDatabase(from: "Media Type", to: "mediatype", in: .items, true)
+//        changeKeysInDatabase(from: "Name", to: "name", in: .items, true)
+//        changeKeysInDatabase(from: "Photo Name", to: "photoid", in: .items, true)
+//        changeKeysInDatabase(from: "Gif URL", to: "gifurl", in: .items, true)
+//        changeKeysInDatabase(from: "Color", to: "color", in: .items, true)
+//        changeKeysInDatabase(from: "Font", to: "font", in: .items, true)
+//        changeKeysInDatabase(from: "Text", to: "text", in: .items, true)
+//        changeKeysInDatabase(from: "bioText", to: "biotext", in: .users, true)
+//        changeKeysInDatabase(from: "imageName", to: "photoid", in: .users, true)
         
         recordingLabel = UILabel(frame: CGRect(x: view.frame.midX - 125, y: view.frame.midY - 50, width: 250, height: 100))
         recordingLabel.text = "Hold anywhere to record. Tap for a picture."

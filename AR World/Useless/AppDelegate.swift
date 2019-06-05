@@ -86,8 +86,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, CLLocationManagerDelegate
         // Configure an alternative FIRApp.
         FirebaseApp.configure(name: "referral", options: secondaryOptions)
         // Retrieve a previous created named app.
-        guard let _ = FirebaseApp.app(name: "referral")
-            else { assert(false, "Could not retrieve referral app") }
+//        guard let _ = FirebaseApp.app(name: "referral")
+//            else { assert(false, "Could not retrieve referral app") }
         // Retrieve a Real Time Database client configured against a specific app.
 //        referralDatabase = Firestore.firestore(app: referral)
         
