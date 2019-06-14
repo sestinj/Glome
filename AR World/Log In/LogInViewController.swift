@@ -126,12 +126,11 @@ class LogInViewController: AuthHandlerViewController {
             signInButton.frame.origin.y += 150
         }
         
-        signInButton.layer.roundCorners()
-        signUpButton.layer.roundCorners()
-        signInButton.layer.borderColor = UIColor.black.cgColor
-        signUpButton.layer.borderColor = UIColor.black.cgColor
-        signInButton.layer.borderWidth = 3
-        signUpButton.layer.borderWidth = 3
+           for i in [signInButton, signUpButton] {
+            i.layer.borderWidth = 3
+            i.layer.borderColor = UIColor.black.cgColor
+            i.layer.roundCorners()
+        }
     }
 
 }
