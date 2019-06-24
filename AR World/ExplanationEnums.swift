@@ -85,6 +85,15 @@ public class FirestoreDocument: NSObject {
         exists = doc.exists
         reference = doc.reference
     }
+    public init?(doc: DocumentSnapshot?) {
+        guard let doc = doc else {return nil}
+        document = doc
+        id = doc.documentID
+        rawData = doc.data()
+        metadata = doc.metadata
+        exists = doc.exists
+        reference = doc.reference
+    }
 }
 extension DocumentSnapshot {
     ///FirebaseDocument initiated from this DocumentSnapshot
@@ -272,6 +281,27 @@ public class User: UserPost {
     }
     public var bioText: String
     override public init(doc: DocumentSnapshot) {
+        let data = doc.data()!
+        name = data["username"] as? String ?? ""
+        blocked = data["blocked"] as? [String] ?? [String]()
+        followers = data["followers"] as? [String] ?? [String]()
+        following = data["following"] as? [String] ?? [String]()
+        items = [ARItem]()
+        name = data["username"] as? String ?? ""
+        imageName = data["imageName"] as? String ?? ""
+        bioText = data["bioText"] as? String ?? ""
+        super.init(doc: doc)
+        
+        getDocuments(from: doc.reference.collection("items")) { (docs) in
+            for doc in docs {
+                getDocument(from: db.collection(named: .items).document(doc.rawData![FirestoreKeys.name.rawValue] as! String), with: { (item) in
+                    self.items.append(ARItem(doc: item.document))
+                })
+            }
+        }
+    }
+    public init?(_ doc: DocumentSnapshot?) {
+        guard let doc = doc else {return nil}
         let data = doc.data()!
         name = data["username"] as? String ?? ""
         blocked = data["blocked"] as? [String] ?? [String]()

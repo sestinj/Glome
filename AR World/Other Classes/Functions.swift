@@ -64,9 +64,23 @@ public func getFirstDocument(from query: Query, with completion: @escaping (Fire
         }
     }
 }
+public func getOptionalFirstDocument(from query: Query, with completion: @escaping (FirestoreDocument?) -> Void) {
+    query.getDocuments { (querySnap, err) in
+        if let err = err {
+            print("Error retrieving documents: \(err)")
+        } else {
+            completion(FirestoreDocument(doc: querySnap?.documents.first))
+        }
+    }
+}
 public func getUser(uid: String, with completion: @escaping (User) -> Void) {
     getFirstDocument(from: db.collection(named: .users).whereField("uid", isEqualTo: uid)) { (doc) in
         completion(User(doc: doc.document))
+    }
+}
+public func getOptionalUser(uid: String, with completion: @escaping (User?) -> Void) {
+    getOptionalFirstDocument(from: db.collection(named: .users).whereField("uid", isEqualTo: uid)) { (doc) in
+        completion(User(doc?.document))
     }
 }
 public func getDocument(from ref: DocumentReference, with completion: @escaping (FirestoreDocument) -> Void) {

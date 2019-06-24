@@ -19,7 +19,7 @@ class OtherViewController: AuthHandlerViewController, UICollectionViewDelegate, 
     @IBOutlet weak var menuButton: UIButton!
     @IBAction func menuButtonPressed(_ sender: UIButton) {
         let menu = UIAlertController(title: "Menu", message: nil, preferredStyle: .actionSheet)
-        if !isRootBio {
+        if !bioState.isRootBio {
             menu.addAction(UIAlertAction(title: "Block", style: .destructive, handler: { (action) in
                 self.blockPressed()
             }))
@@ -37,9 +37,8 @@ class OtherViewController: AuthHandlerViewController, UICollectionViewDelegate, 
     var vibrantBanner: UIVisualEffectView!
     var topLine: CAShapeLayer!
     
-    private var isSignedIn = false
-    var isRootBio = false
     public var uid: String?
+    private var user: User?
     private var userData: [String:Any]?
     private var userDocRef: DocumentReference?
     var items = [ARItem]()
@@ -63,7 +62,7 @@ class OtherViewController: AuthHandlerViewController, UICollectionViewDelegate, 
     //MARK: UIImagePickerDelegate
     //User photo
     @objc func selectImage() {
-        if !isRootBio {
+        if !bioState.isRootBio {
             return
         }
         let picker = UIImagePickerController()
@@ -116,23 +115,9 @@ let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
         case following = "Following"
         case signedout = "Sign In/Up"
         case signedin = "Sign Out"
-        ///When the uid is nil
         case usernotfound = "User Not Found"
-        
-        func setupState() {
-            switch self {
-            case .follow:
-                break
-            case .following:
-                break
-            case .signedout:
-                break
-            case .usernotfound:
-                break
-            case .signedin:
-                break
-            }
-        }
+        ///Always begins in loading state, until User object is retrieved, then it is transferred either to .usernotfound or a valid state, then the content is displayed
+        case loading = "Loading"
         
         var isRootBio: Bool {
             return self == .signedin || self == .signedout
@@ -142,37 +127,26 @@ let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
     //MARK: Outlets
     @IBAction func followPressed(_ sender: UIButton) {
         switch bioState {
+        case .loading:
+            return
         case .follow:
-            break
-        case .following:
-            break
-        case .signedout:
-            break
-        case .usernotfound:
-            break
-        case .signedin:
-            break
-        }
-        
-        if sender.title(for: .normal) == "Follow" {
-            guard let uid = uid else {return}
             //Add user to currentUser's following//Add currentUser to user's followers
             if let currentUser = auth.currentUser {
-                addUserToUserList(user: uid, userToAdd: currentUser.uid, list: "followers")
-                addUserToUserList(user: currentUser.uid, userToAdd: uid, list: "following")
+                addUserToUserList(user: uid!, userToAdd: currentUser.uid, list: "followers")
+                addUserToUserList(user: currentUser.uid, userToAdd: uid!, list: "following")
                 followButton.setTitle("Following", for: .normal)
                 followButton.backgroundColor = .white
             }
-        } else if sender.title(for: .normal) == "Following" {
-            guard let uid = uid else {return}
-            
+        case .following:
             if let currentUser = auth.currentUser {
-                //TODO: Remove follower
+                
             }
-        } else if sender.title(for: .normal) == "Sign In/Up" {
+        case .signedout:
             //Go to login page
             present(LogInViewController(), animated: true, completion: nil)
-        } else if sender.title(for: .normal) == "Sign Out" {
+        case .usernotfound:
+            return
+        case .signedin:
             //Sign out and clear bio page
             do {
                 try auth.signOut()
@@ -189,18 +163,18 @@ let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
             collectionView.reloadData()
         }
     }
+    
     @objc func blockPressed() {
         let blockAlert = UIAlertController(title: "Are you sure?", message: "Blocking this user will also report them.", preferredStyle: .actionSheet)
         blockAlert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
         //Make sure they really want to block the user
         let blockAction = UIAlertAction(title: "Block", style: .destructive) { (action) in
             //Block user and send message to CSC
-            guard let uid = self.uid else {return}
             if let currentUser = auth.currentUser {
-                db.collection("flagged").addDocument(data: ["stuff": "The user with uid \(uid) has been blocked by the user with uid \(currentUser.uid)"])
+                db.collection("flagged").addDocument(data: ["stuff": "The user with uid \(self.uid!) has been blocked by the user with uid \(currentUser.uid)"])
                 getUser(uid: currentUser.uid, with: { (user) in
-                    user.blocked.append(uid)
-                    self.view.checkBlockStatus(uid: uid, vc: self)
+                    user.blocked.append(self.uid!)
+                    self.view.checkBlockStatus(uid: self.uid!, vc: self)
                 })
             }
         }
@@ -210,7 +184,6 @@ let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
     @IBOutlet weak var followersButton: UIButton!
     private func showUsersTable(listType: String) {
         //present the users tableview
-        guard let uid = uid else {return}
         let usersVC = UsersTableViewController()
         let navVC = UINavigationController()
         navVC.delegate = self
@@ -220,7 +193,7 @@ let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
         usersVC.navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .done, target: usersVC, action: #selector(usersVC.done))
         usersVC.navigationItem.leftBarButtonItem!.tintColor = vibrantPurple
         usersVC.userUID = uid
-        usersVC.isRootBio = self.isRootBio
+        usersVC.isRootBio = bioState.isRootBio
         self.present(navVC, animated: true, completion: nil)
     }
     @IBAction func followersPressed(_ sender: UIButton) {
@@ -325,50 +298,56 @@ let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
     }
     
     func loadBio() {
-        //Check if is root bio, if user is signed in, reset everything
-        items.removeAll()
-        //Check UID (if not specified, this is main rootBio)
-        if let uid = uid {
-            userDocRef = db.collection("users").document(uid)
-            view.checkBlockStatus(uid: uid, vc: self)
-        } else {
-            isRootBio = true
-        }
-        //Root bio - this denotes the current user's bio
-        if isRootBio {
-            if let authCurrentUser = auth.currentUser {
-                uid = authCurrentUser.uid
-                userDocRef = db.collection("users").document(uid!)
-                isSignedIn = true
-                //when isRootBio, follow button = signin/out button
-                followButton.setTitle("Sign Out", for: .normal)
-            } else {
-                //When the user isn't logged in, follow button = signin button
+        bioState = .loading
+        
+        if uid == nil {
+            //ROOT BIO
+            if auth.currentUser == nil {
+                ///SIGNED OUT
+                bioState = .signedout
                 followButton.setTitle("Sign In/Up", for: .normal)
+                self.bioTextView.alpha = 0.0
+                self.usernameLabel.alpha = 0.0
+                self.userPhoto.isUserInteractionEnabled = false
+            } else {
+                getOptionalUser(uid: uid!) { (user) in
+                    guard let user = user else {
+                        self.bioState = .usernotfound
+                        return
+                    }
+                    
+                    //SIGNED IN
+                    self.bioState = .signedin
+                    self.followButton.setTitle("Sign Out", for: .normal)
+                    self.bioTextView.delegate = self
+                    self.bioTextView.isEditable = true
+                    self.bioTextView.isSelectable = true
+                }
+            }
+        } else {
+            //NOT ROOT BIO
+            getOptionalUser(uid: uid!) { (user) in
+                guard let user = user else {
+                    self.bioState = .usernotfound
+                    return
+                }
+                self.user = user
+                self.userPhoto.isUserInteractionEnabled = false
+                if auth.currentUser == nil {
+                    self.bioState = 
+                }
             }
         }
         
-        //Signedin/Rootbio - editing capabilities
+        
+        items.removeAll()
         usernameLabel.alpha = 1.0
         bioTextView.alpha = 1.0
-        if isRootBio {
-            if isSignedIn {
-                bioTextView.delegate = self
-                bioTextView.isEditable = true
-                bioTextView.isSelectable = true
-            } else {
-                bioTextView.alpha = 0.0
-                usernameLabel.alpha = 0.0
-                userPhoto.isUserInteractionEnabled = false
-            }
-        } else {
-            userPhoto.isUserInteractionEnabled = false
-        }
         
         //User is found/signed in
-        if let uid = uid {
+        if !(bioState == .usernotfound) {
             //Get user's bio photo and bio text
-            getUser(uid: uid, with: { (user) in
+            getUser(uid: uid!, with: { (user) in
                 self.userDocRef = user.reference
                 self.followingButton.setTitle("Following: \(String(describing: user.numFollowing))", for: .normal)
                 self.followersButton.setTitle("Followers: \(String(describing: user.numFollowers))", for: .normal)
