@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="14460.31" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
-    <device id="retina4_7" orientation="portrait">
-        <adaptation id="fullscreen"/>
-    </device>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="14810.11" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina4_7" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="14460.20"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="14766.13"/>
+        <capability name="Named colors" minToolsVersion="9.0"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -27,10 +26,6 @@
             <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
             <subviews>
-                <imageView userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" image="GlomeLogo" translatesAutoresizingMaskIntoConstraints="NO" id="Vtt-yL-bNC">
-                    <rect key="frame" x="67" y="269" width="240" height="128"/>
-                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                </imageView>
                 <arscnView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="BEM-zK-ejb">
                     <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
@@ -39,7 +34,7 @@
                 <visualEffectView opaque="NO" contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="AR9-BX-INf">
                     <rect key="frame" x="154" y="560" width="75" height="75"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" ambiguous="YES" insetsLayoutMarginsFromSafeArea="NO" id="c7c-yE-oOs">
+                    <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="c7c-yE-oOs">
                         <rect key="frame" x="0.0" y="0.0" width="75" height="75"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
@@ -57,13 +52,15 @@
                             </button>
                         </subviews>
                     </view>
-                    <color key="backgroundColor" red="0.29411764705882354" green="0.0" blue="0.58823529411764708" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                    <blurEffect style="light"/>
+                    <color key="backgroundColor" name="vibrantPurple"/>
+                    <vibrancyEffect>
+                        <blurEffect style="light"/>
+                    </vibrancyEffect>
                 </visualEffectView>
                 <visualEffectView opaque="NO" contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="rOE-Hv-cZ5">
                     <rect key="frame" x="309" y="597" width="50" height="50"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" ambiguous="YES" insetsLayoutMarginsFromSafeArea="NO" id="zs1-7Y-Hpy">
+                    <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="zs1-7Y-Hpy">
                         <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
@@ -81,13 +78,15 @@
                             </button>
                         </subviews>
                     </view>
-                    <color key="backgroundColor" red="0.29411764705882354" green="0.0" blue="0.58823529411764708" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                    <blurEffect style="light"/>
+                    <color key="backgroundColor" name="vibrantPurple"/>
+                    <vibrancyEffect>
+                        <blurEffect style="light"/>
+                    </vibrancyEffect>
                 </visualEffectView>
                 <visualEffectView opaque="NO" contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="eQ8-Bk-rt3">
                     <rect key="frame" x="20" y="597" width="50" height="50"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" ambiguous="YES" insetsLayoutMarginsFromSafeArea="NO" id="bVy-z2-ehA">
+                    <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="bVy-z2-ehA">
                         <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
@@ -105,9 +104,11 @@
                             </button>
                         </subviews>
                     </view>
-                    <color key="backgroundColor" red="0.29411764705882354" green="0.0" blue="0.58823529411764708" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                    <color key="backgroundColor" name="vibrantPurple"/>
                     <color key="tintColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                    <blurEffect style="light"/>
+                    <vibrancyEffect>
+                        <blurEffect style="light"/>
+                    </vibrancyEffect>
                 </visualEffectView>
             </subviews>
             <color key="backgroundColor" red="0.99193829298019409" green="0.95566358593972589" blue="0.32899036423622197" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
@@ -116,7 +117,9 @@
         </view>
     </objects>
     <resources>
-        <image name="GlomeLogo" width="512" height="512"/>
         <image name="camera" width="160" height="160"/>
+        <namedColor name="vibrantPurple">
+            <color red="0.5" green="0.0" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
     </resources>
 </document>

@@ -10,7 +10,7 @@ import UIKit
 import Firebase
 
 class AuthHandlerViewController: UIViewController {
-
+    
     //MARK: Auth
     var handle: AuthStateDidChangeListenerHandle!
     override func viewDidAppear(_ animated: Bool) {

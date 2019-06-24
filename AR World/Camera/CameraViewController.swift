@@ -12,25 +12,18 @@ import CoreLocation
 import Firebase
 import SwiftyGiphy
 import ReplayKit
+import CoreMotion
 
-class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate, UIGestureRecognizerDelegate, SwiftyGiphyViewControllerDelegate, RPPreviewViewControllerDelegate {
-    
-    //MARK: SwiftyGiphyViewControllerDelegate
-    func giphyControllerDidSelectGif(controller: SwiftyGiphyViewController, item: GiphyItem) {
-        controller.dismiss(animated: true, completion: nil)
-        if let url = item.originalImage!.url {
-            addItemDocument(data: ["Media Type": "Gif", "Gif URL": url.absoluteString])
-        }
-    }
-    func giphyControllerDidCancel(controller: SwiftyGiphyViewController) {
-        controller.dismiss(animated: true, completion: nil)
-    }
+class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate, UIGestureRecognizerDelegate, SwiftyGiphyViewControllerDelegate, RPPreviewViewControllerDelegate, CardViewControllerDelegate {
     
     
-    var parentVC: ViewController!
-    var nearItems = [CLLocation]()
-    var nodesDictionary = [SCNNode:ARItem]()
-    var documents = [ARItem]()
+    //Top level UI
+    @IBOutlet weak var glomeButton: UIButton!
+    var vibrantBanner: UIVisualEffectView!
+    var topLine: CAShapeLayer!
+    var motionManager: CMMotionManager!
+    var motionTimer: Timer!
+    public var inDormantMode: Bool = false
     
     //MARK: Outlets
     @objc func longRecognizer(_ sender: UILongPressGestureRecognizer) {
@@ -50,10 +43,15 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
             let node = first.node
             guard let document = nodesDictionary[node] else {return}
             
+            
+            let card = CardViewController()
+            card.delegate = self
+            view.addSubview(card.view)
+            addChild(card)
             let descriptionVC = DescriptionViewController()
             descriptionVC.doc = document
-            descriptionVC.camVC = self
-            present(descriptionVC, animated: true, completion: nil)
+            card.view.addSubview(descriptionVC.view)
+            card.addChild(descriptionVC)
         }
         if recordingReady {
             //Take photo
@@ -100,7 +98,19 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
     //Camera Button (Toolbar for posting)
     private func extendCameraButton() {
         guard defaults.bool(forKey: "eula") else {
-            parentVC.showPopUpView(type: .eula)
+            let alert = UIAlertController(title: "Agree To Continue", message: """
+            Terms of Use (EULA)
+            
+            Thanks for joining Glome!
+            
+            In order to maintain a high quality, safe, and friendly environment, it is important that all users adhere to the guidelines that we have put in place. Under no circumstances will offenders of these guidelines be tolerated. Once ejected from Glome, there is no second chance. Inappropriate content may be automatically blocked or flagged by users. Both indicators will lead to review by our Community Safety Committee, which will swiftly remove any inappropriate content, as well as the user responsible for the posting of said content. Inappropriate content includes, but is not limited to profanity, bullying, nudity, stolen content, promotion of illegal activities, hate speech, and graphical images. Ultimately, the discretion is in the hands of our Committee, which will make decisions with the community’s best interest in mind. All content should be fitting for a diverse community of many ages, beliefs, and cultures.
+            """, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "Agree", style: .default, handler: { (action) in
+                defaults.set(true, forKey: "eula")
+            }))
+            present(alert, animated: true, completion: nil)
+            
+//            parentVC.showPopUpView(type: .eula)
             return
         }
         
@@ -120,6 +130,7 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
             frame.origin.y += frame.height
             let newButton = UIButton(frame: frame)
             newButton.setBackgroundImage(UIImage(named: button.key), for: .normal)
+            newButton.imageView?.contentMode = .scaleAspectFit
             newButton.contentMode = .scaleAspectFit
             newButton.addTarget(self, action: button.value, for: .touchUpInside)
             fxViewPlus.contentView.addSubview(newButton)
@@ -139,6 +150,26 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
         cameraButton.setTitle("+", for: .normal)
     }
     @IBAction func cameraButtonPressed(_ sender: UIButton) {
+        let fx = UIVisualEffectView(frame: CGRect(x: 10, y: 100, width: screen.width - 20, height: 200))
+        fx.effect = UIBlurEffect(style: .light)
+        fx.roundCorners(.allCorners, radius: 10)
+//        view.addSubview(fx)
+        
+        let maskPath = UIBezierPath()
+        maskPath.move(to: CGPoint(x: screen.width/2.0 - 25, y: 300))
+        maskPath.addLine(to: CGPoint(x: screen.width/2.0 + 25, y: 300))
+        maskPath.addLine(to: CGPoint(x: screen.width/2.0, y: 350))
+        maskPath.close()
+        maskPath.lineJoinStyle = .round
+        maskPath.lineCapStyle = .round
+        let mask = CAShapeLayer()
+        mask.path = maskPath.cgPath
+        
+        let arrowFX = UIVisualEffectView(frame: CGRect(x: screen.width/2.0 - 25, y: 300, width: 50, height: 50))
+        arrowFX.effect = UIBlurEffect(style: .light)
+        arrowFX.layer.mask = mask
+        view.addSubview(arrowFX)
+        
         if sender == cameraButton {
             
             if sender.title(for: .normal) == "+" {
@@ -150,7 +181,22 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
     }
     
     
+    //MARK: Adding content
     public var gifVC: SwiftyGiphyViewController!
+    //SwiftyGiphyViewControllerDelegate
+    func giphyControllerDidSelectGif(controller: SwiftyGiphyViewController, item: GiphyItem) {
+        controller.dismiss(animated: true, completion: nil)
+        if let url = item.originalImage!.url {
+            addItemDocument(data: ["Media Type": "Gif", "Gif URL": url.absoluteString])
+        }
+    }
+    func giphyControllerDidCancel(controller: SwiftyGiphyViewController) {
+        controller.dismiss(animated: true, completion: nil)
+    }
+    
+    var nearItems = [CLLocation]()
+    var nodesDictionary = [SCNNode:ARItem]()
+    var documents = [ARItem]()
     @objc func selectGif() {
         shortenCameraButton()
         gifVC = SwiftyGiphyViewController()
@@ -163,7 +209,7 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
     }
     @objc func selectShape() {
         shortenCameraButton()
-        parentVC.showPopUpView(type: .colorPicker)
+//        parentVC.showPopUpView(type: .colorPicker)
     }
     @objc func selectDrawing() {
         shortenCameraButton()
@@ -171,6 +217,8 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
         drawVC.navigationItem.title = "DRAW"
         drawVC.navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(addDrawing))
         let navVC = UINavigationController(rootViewController: drawVC)
+//        performSegue(withIdentifier: "CameraToDrawing", sender: self)
+        navVC.modalPresentationStyle = .overFullScreen
         present(navVC, animated: true, completion: nil)
     }
     @objc func addShape() {
@@ -178,7 +226,7 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
     }
     @objc func selectText() {
         shortenCameraButton()
-        parentVC.showPopUpView(type: .textProperties)
+//        parentVC.showPopUpView(type: .textProperties)
     }
     var addTextParamText: String!
     var addTextParamColor: UIColor!
@@ -205,8 +253,7 @@ class CameraViewController: AuthHandlerViewController, ARSCNViewDelegate, UIImag
         addItemDocument(data: ["photoid": name, "Media Type": "Photo"])
     }
     
-    
-    //Mark: Image Picker Controller Delegate
+    //Image Picker Controller Delegate
     @objc func selectPhoto() {
         shortenCameraButton()
         let picker = UIImagePickerController()
@@ -243,7 +290,9 @@ let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
     }
     
     
+    
     //MARK: viewDidLoad()
+    private var itemsTableVC: ItemsTableViewController!
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -252,6 +301,7 @@ let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
 //        changeKeysInDatabase(from: "Media Type", to: "mediatype", in: .items, true)
 //        changeKeysInDatabase(from: "Name", to: "name", in: .items, true)
 //        changeKeysInDatabase(from: "Photo Name", to: "photoid", in: .items, true)
+//        changeKeysInDatabase(from: "name", to: "username", in: .users, true)
 //        changeKeysInDatabase(from: "Gif URL", to: "gifurl", in: .items, true)
 //        changeKeysInDatabase(from: "Color", to: "color", in: .items, true)
 //        changeKeysInDatabase(from: "Font", to: "font", in: .items, true)
@@ -277,9 +327,10 @@ let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
         if X() {
             view.frame.size.height += 150
             arScene.frame.size.height += 150
-            fxViewReset.frame.origin.y += 150
-            fxViewPlus.frame.origin.y += 150
-            fxViewEye.frame.origin.y += 150
+            fxViewReset.frame.origin.y += 106
+            fxViewPlus.frame.origin.y += 106
+            fxViewEye.frame.origin.y += 106
+            glomeButton.frame.origin.y += 22
         }
         
         arScene.delegate = self
@@ -303,6 +354,26 @@ let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
         fxViewReset.layer.roundCorners()
         
         
+        //Top Level UI
+        vibrantBanner = UIVisualEffectView(frame: CGRect(x: 0, y: 83-150, width: view.frame.width, height: 150))
+        vibrantBanner.layer.zPosition = 4
+        vibrantBanner.effect = UIBlurEffect(style: .light)
+        if #available(iOS 13.0, *) {
+            if UITraitCollection.current.userInterfaceStyle == .dark {
+                vibrantBanner.effect = UIBlurEffect(style: .dark)
+            }
+        }
+        view.addSubview(vibrantBanner)
+        glomeButton.layer.zPosition = 5
+        
+        topLine = CAShapeLayer()
+        topLine.path = CGPath(rect: CGRect(x: 0, y: 83, width: view.frame.width, height: 3), transform: nil)
+        view.layer.addSublayer(topLine)
+        if !X() {
+            topLine.frame.origin.y -= 22
+            vibrantBanner.frame.origin.y -= 22
+        }
+        
         //Gestures
         long = UILongPressGestureRecognizer(target: self, action: #selector(longRecognizer(_:)))
         long.delegate = self
@@ -310,6 +381,41 @@ let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
         short = UITapGestureRecognizer(target: self, action: #selector(tapRecognizer(_:)))
         short.delegate = self
         view.addGestureRecognizer(short)
+        
+        
+        //Gyro Detection
+        motionManager = CMMotionManager()
+        motionManager.startGyroUpdates()
+        motionManager.gyroUpdateInterval = 1.0/60.0
+        self.motionTimer = Timer(fire: Date(), interval: 1.0/60.0, repeats: true, block: { (timer) in
+            if let data = self.motionManager.gyroData {
+                let ddy = data.rotationRate.x
+                if ddy > 10 && self.inDormantMode {
+                    print("Dormant mode off")
+                    impact(style: .heavy)
+                    self.inDormantMode = false
+                    self.itemsTableVC.dismiss(animated: true, completion: nil)
+                } else if ddy < -10 && !self.inDormantMode {
+                    print("Dormant mode on")
+                    impact(style: .heavy)
+                    self.inDormantMode = true
+                    let itemsTableView = ItemsTableViewController()
+                    self.itemsTableVC = itemsTableView
+                    itemsTableView.nearItems = self.documents
+                    self.presentWithNav(vc: itemsTableView)
+                }
+            }
+        })
+        RunLoop.current.add(self.motionTimer, forMode: .default)
+    }
+    
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        vibrantBanner.effect = UIBlurEffect(style: .light)
+        if #available(iOS 13.0, *) {
+            if UITraitCollection.current.userInterfaceStyle == .dark {
+                vibrantBanner.effect = UIBlurEffect(style: .dark)
+            }
+        }
     }
     
     
@@ -329,7 +435,6 @@ let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
             }
         }
     }
-    
     func decidePosition(fromCoordinates loc: CLLocation) -> SCNVector3? {
         guard let location = location else {return nil}
         
@@ -358,9 +463,6 @@ let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
         
         return vec
     }
-    
-    
-    
     func addItemDocument(data: [String:Any]) {
         var newData = data
         guard let currentUser = auth.currentUser else {
@@ -392,7 +494,6 @@ let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
         alert.addAction(addAction)
         present(alert, animated: true, completion: nil)
     }
-    
     private func showIntro() {
 //        let wData: [String:Any] = ["Media Type":"Photo", "uid": "VlgVcTvcUfW2PdGp17xS1O8z2vG2", "Name": "Glome", "Photo Name": "iTunesArtwork@1x.png", "coordinates": GeoPoint(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude)]
         getFirstDocument(from: db.collection(named: .items).whereField("photoid", isEqualTo: "iTunesArtwork@1x.png"), with: { (doc) in
@@ -403,7 +504,6 @@ let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
         })
         defaults.set(false, forKey: "intro")
     }
-    
     @objc func loadNearItems() {
         nodesDictionary = [SCNNode:ARItem]()
         cleanItems()
@@ -420,6 +520,7 @@ let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
                 if location!.distance(from: loc) < 100 {
                     let newNode = self.createNewNode(item: item)
                     self.nodesDictionary[newNode] = item
+                    self.documents.append(item)
                 }
             }
             self.resetTracking()
@@ -444,8 +545,6 @@ let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
 //            }
 //        }
     }
-    
-    
     func createNewNode(item: ARItem) -> SCNNode {
         
         var node: SCNNode!
@@ -515,7 +614,6 @@ let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
         
         return node
     }
-    
     func resetTracking() {
         print("Reset Tracking")
         arScene.session = ARSession()
@@ -542,11 +640,11 @@ let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
         singleDocToLoad.nonGeo = true
         let node = createNewNode(item: singleDocToLoad)
         self.nodesDictionary[node] = singleDocToLoad
-        parentVC.scrollView.scrollRectToVisible(parentVC.camVC.view.frame, animated: false)
         resetTracking()
         //For viewing remotely from bio, etc...
         //Adds item in front of camera, not based on geography, but it stays in that spot when phone moves (normal AR mode)
     }
+    
     //MARK: Recording
     var recordingCircle: CAShapeLayer!
     var recordingLabel: UILabel!
@@ -557,36 +655,22 @@ let info = convertFromUIImagePickerControllerInfoKeyDictionary(info)
         recordingReady = true
         //Opacities
         recordingLabel.alpha = 1.0
-        parentVC.scrollView.isScrollEnabled = false
         fxViewEye.alpha = 0.0
         fxViewReset.alpha = 0.0
         fxViewPlus.alpha = 0.0
         buttonsAreVisible = false
         recordingCircle.opacity = 1.0
-        parentVC.topBackground.opacity = 0.0
-        parentVC.topLine.opacity = 0.0
-        parentVC.appTitle.alpha = 0.0
-        parentVC.purplePin.alpha = 0.0
-        parentVC.userIcon.alpha = 0.0
-        
-        
     }
     
     func showButtonsAfterRecording() {
         recordingCircle.removeAnimation(forKey: "recording")
         recordingLabel.alpha = 0.0
         //Opacities
-        parentVC.scrollView.isScrollEnabled = true
         fxViewEye.alpha = 1.0
         fxViewReset.alpha = 1.0
         fxViewPlus.alpha = 1.0
         buttonsAreVisible = true
         recordingCircle.opacity = 0.0
-        parentVC.topBackground.opacity = 0.5
-        parentVC.topLine.opacity = 1.0
-        parentVC.appTitle.alpha = 1.0
-        parentVC.purplePin.alpha = 1.0
-        parentVC.userIcon.alpha = 1.0
     }
     @objc func startRecording() {
         recording = true

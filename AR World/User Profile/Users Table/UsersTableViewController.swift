@@ -12,10 +12,12 @@ import Firebase
 class UsersTableViewController: UITableViewController {
     var userUID: String!
     
+    public var isRootBio = false
+    
     public var navVC: UINavigationController!
     //The list type is either 'following' or 'followers'
     var listType: String!
-    private var documents = [DocumentSnapshot?]()
+    private var users = [User?]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -23,32 +25,31 @@ class UsersTableViewController: UITableViewController {
         tableView.register(UINib(nibName: "UsersTableViewCell", bundle: nil), forCellReuseIdentifier: "usersReuseIdentifier")
         
         //Load the users, then reload table view
-        getDocuments(from: db.collection("users").whereField("uid", isEqualTo: userUID as Any), with: { (querySnap1) in
-            if let list = querySnap1.first!.rawData![self.listType] as? [String] {
-                var count = list.count
-                for uid in list {
-                    count -= 1
-                    getUser(uid: uid, with: { (querySnap) in
-                        self.documents.append(querySnap1.first!.document)
-                        if count < 1 {
-                            self.tableView.reloadData()
-                        }
-                    })
+        getUser(uid: userUID) { (user) in
+            var list = [String]()
+            switch self.listType {
+            case "followers":
+                list = user.followers
+            default:
+                list = user.following
+            }
+            for uid in list {
+                getUser(uid: uid) { (subUser) in
+                    self.users.append(subUser)
+                    self.tableView.reloadData()
                 }
             }
-        })
+        }
     }
 
     // MARK: - Table view data source
 
     override func numberOfSections(in tableView: UITableView) -> Int {
-        // #warning Incomplete implementation, return the number of sections
         return 1
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        // #warning Incomplete implementation, return the number of rows
-        return documents.count
+        return users.count
     }
 
     
@@ -56,70 +57,50 @@ class UsersTableViewController: UITableViewController {
         let cell = tableView.dequeueReusableCell(withIdentifier: "usersReuseIdentifier", for: indexPath) as! UsersTableViewCell
 
         // Configure the cell...
-        guard let doc  = documents[indexPath.row] else {
+        guard let user = users[indexPath.row] else {
             cell.usernameLabel.text = "User not found"
             return cell
         }
-        let name = doc.data()!["username"] as! String
-        cell.usernameLabel.text = name
-        if let imageName = doc.data()!["imageName"] as? String {
-            storage.reference().child(imageName).getData(maxSize: 10240*10240) { (imageData, err) in
-                if let err = err {
-                    print(err)
-                } else {
-                    guard let newImage = UIImage(data: imageData!) else {return}
-                    cell.profilePic.image = newImage
-                }
+        
+        cell.usernameLabel.text = user.name
+        
+        storage.reference().child(user.imageName).getData(maxSize: 10240*10240) { (imageData, err) in
+            if let err = err {
+                print(err)
+            } else {
+                guard let newImage = UIImage(data: imageData!) else {return}
+                cell.profilePic.image = newImage
             }
         }
+        
         
         return cell
     }
  
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let link = UsernameLinkButton(uid: users[indexPath.row]!.id, parentVC: self)
+        link.openUserPage()
+    }
 
-    /*
-    // Override to support conditional editing of the table view.
+    //Can edit to delete followers
     override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
         // Return false if you do not want the specified item to be editable.
-        return true
+        return listType == "following" && isRootBio
+     }
+    override func tableView(_ tableView: UITableView, editActionsForRowAt indexPath: IndexPath) -> [UITableViewRowAction]? {
+        return [UITableViewRowAction(style: .destructive, title: "Unfollow", handler: { (action, path) in
+            var newList = self.users.map { (user) -> String in
+                return user!.uid
+            }
+            newList.remove(at: indexPath.row)
+            let uid = auth.currentUser!.uid
+            self.users.remove(at: indexPath.row)
+            getUser(uid: uid) { (user) in
+                user.reference.updateData([self.listType: newList])
+            }
+            self.tableView.deleteRows(at: [path], with: .fade)
+        })]
     }
-    */
-
-    /*
-    // Override to support editing the table view.
-    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCellEditingStyle, forRowAt indexPath: IndexPath) {
-        if editingStyle == .delete {
-            // Delete the row from the data source
-            tableView.deleteRows(at: [indexPath], with: .fade)
-        } else if editingStyle == .insert {
-            // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
-        }    
-    }
-    */
-
-    /*
-    // Override to support rearranging the table view.
-    override func tableView(_ tableView: UITableView, moveRowAt fromIndexPath: IndexPath, to: IndexPath) {
-
-    }
-    */
-
-    /*
-    // Override to support conditional rearranging of the table view.
-    override func tableView(_ tableView: UITableView, canMoveRowAt indexPath: IndexPath) -> Bool {
-        // Return false if you do not want the item to be re-orderable.
-        return true
-    }
-    */
-
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destination.
-        // Pass the selected object to the new view controller.
-    }
-    */
+ 
     
 }

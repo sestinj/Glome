@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="14460.31" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
-    <device id="retina4_7" orientation="portrait">
-        <adaptation id="fullscreen"/>
-    </device>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="14810.11" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina4_7" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="14460.20"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="14766.13"/>
+        <capability name="Named colors" minToolsVersion="9.0"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -19,7 +18,6 @@
             <connections>
                 <outlet property="commentBox" destination="Bql-tk-DHQ" id="tWc-5f-Nsh"/>
                 <outlet property="commentContainerView" destination="b7z-15-CQz" id="K9N-wk-OAO"/>
-                <outlet property="distanceLabel" destination="hQF-eU-B8B" id="u4P-qb-pAu"/>
                 <outlet property="glomeLogo" destination="X4F-hj-Sit" id="bVe-LI-r4I"/>
                 <outlet property="likeButton" destination="11E-iU-26T" id="6fS-5B-RAY"/>
                 <outlet property="likesLabel" destination="gCy-xv-2BP" id="Pgg-wp-cWq"/>
@@ -38,7 +36,7 @@
             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
             <subviews>
                 <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" image="GlomeLogo" translatesAutoresizingMaskIntoConstraints="NO" id="X4F-hj-Sit">
-                    <rect key="frame" x="-18" y="224" width="410" height="218"/>
+                    <rect key="frame" x="-18" y="166" width="410" height="218"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                 </imageView>
                 <tableView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" fixedFrame="YES" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="FMd-sA-sXF">
@@ -46,8 +44,8 @@
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     <color key="backgroundColor" red="0.50196078430000002" green="0.0" blue="1" alpha="0.0" colorSpace="custom" customColorSpace="sRGB"/>
                 </tableView>
-                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="TITLE" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="cuK-Ue-4Pp">
-                    <rect key="frame" x="73" y="76" width="244" height="34"/>
+                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="TITLE" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="cuK-Ue-4Pp">
+                    <rect key="frame" x="73" y="16" width="244" height="34"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     <fontDescription key="fontDescription" type="system" weight="heavy" pointSize="28"/>
                     <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
@@ -63,7 +61,7 @@
                     </connections>
                 </button>
                 <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ttJ-Vs-DCE">
-                    <rect key="frame" x="329" y="20" width="30" height="30"/>
+                    <rect key="frame" x="329" y="19" width="30" height="30"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     <fontDescription key="fontDescription" name="Roboto-Bold" family="Roboto" pointSize="17"/>
                     <state key="normal" image="dots"/>
@@ -71,14 +69,7 @@
                         <action selector="menuButtonPressed:" destination="-1" eventType="touchUpInside" id="nbH-ec-ovi"/>
                     </connections>
                 </button>
-                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="0.0 meters" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="hQF-eU-B8B">
-                    <rect key="frame" x="289" y="117" width="86" height="21"/>
-                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <fontDescription key="fontDescription" type="system" pointSize="17"/>
-                    <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                    <nil key="highlightedColor"/>
-                </label>
-                <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6uW-Nz-Lpl">
+                <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" image="ZStudiosLogo" translatesAutoresizingMaskIntoConstraints="NO" id="6uW-Nz-Lpl">
                     <rect key="frame" x="5" y="76" width="63" height="63"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                 </imageView>
@@ -98,7 +89,7 @@
                     <nil key="highlightedColor"/>
                 </label>
                 <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="left" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="DtT-NL-sYn" customClass="UsernameLinkButton" customModule="AR_World" customModuleProvider="target">
-                    <rect key="frame" x="73" y="112" width="171" height="30"/>
+                    <rect key="frame" x="73" y="92" width="171" height="30"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     <fontDescription key="fontDescription" type="system" pointSize="15"/>
                     <state key="normal" title="Username">
@@ -106,7 +97,7 @@
                     </state>
                 </button>
                 <view contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="b7z-15-CQz">
-                    <rect key="frame" x="-3" y="612" width="380" height="99"/>
+                    <rect key="frame" x="-3" y="522" width="380" height="145"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     <subviews>
                         <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" fixedFrame="YES" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="Bql-tk-DHQ" customClass="MultilineTextField" customModule="AR_World" customModuleProvider="target">
@@ -120,27 +111,22 @@
                             </userDefinedRuntimeAttributes>
                         </textView>
                     </subviews>
-                    <color key="backgroundColor" red="0.50196078430000002" green="0.0" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                    <color key="backgroundColor" name="vibrantPurple"/>
                 </view>
-                <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="KeR-PR-Uzf">
-                    <rect key="frame" x="246" y="112" width="42" height="32"/>
-                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <state key="normal" title="Button" image="distanceIcon"/>
-                    <connections>
-                        <action selector="directionsButtonPressed:" destination="-1" eventType="touchUpInside" id="f6x-xn-jyK"/>
-                    </connections>
-                </button>
             </subviews>
-            <color key="backgroundColor" red="0.50196078430000002" green="0.0" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color key="backgroundColor" name="vibrantPurple"/>
             <viewLayoutGuide key="safeArea" id="jQw-9U-cxz"/>
             <point key="canvasLocation" x="-5.5999999999999996" y="179.46026986506749"/>
         </view>
     </objects>
     <resources>
         <image name="GlomeLogo" width="512" height="512"/>
-        <image name="distanceIcon" width="200" height="200"/>
+        <image name="ZStudiosLogo" width="200" height="177"/>
         <image name="dots" width="200" height="200"/>
         <image name="unliked" width="385" height="350"/>
-        <image name="x" width="409.60000610351562" height="409.60000610351562"/>
+        <image name="x" width="512" height="512"/>
+        <namedColor name="vibrantPurple">
+            <color red="0.5" green="0.0" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
     </resources>
 </document>

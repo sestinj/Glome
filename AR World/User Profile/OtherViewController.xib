@@ -1,26 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="14460.31" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
-    <device id="retina4_7" orientation="portrait">
-        <adaptation id="fullscreen"/>
-    </device>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="14810.11" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina4_7" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="14460.20"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="14766.13"/>
+        <capability name="Named colors" minToolsVersion="9.0"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
         <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner" customClass="OtherViewController" customModule="AR_World" customModuleProvider="target">
             <connections>
-                <outlet property="bioTextView" destination="05y-Eo-AOH" id="3Xp-dJ-tob"/>
-                <outlet property="blockButton" destination="vwJ-8C-xiG" id="iA6-2n-m9D"/>
-                <outlet property="collectionView" destination="AqN-xS-1bR" id="5qB-4n-tai"/>
-                <outlet property="followButton" destination="Q2I-Dm-4UQ" id="Bgc-zE-CDR"/>
-                <outlet property="followersButton" destination="Kmj-ER-BFT" id="WBd-9f-P9n"/>
-                <outlet property="followingButton" destination="ihZ-vL-YvX" id="SPH-5i-Cx7"/>
-                <outlet property="infoButton" destination="ywH-HP-auI" id="J1U-xs-o1m"/>
-                <outlet property="userPhoto" destination="zFp-f6-OSm" id="JCY-7T-RaX"/>
-                <outlet property="usernameLabel" destination="h0c-EN-crx" id="Ued-gb-7JQ"/>
+                <outlet property="bioTextView" destination="05y-Eo-AOH" id="vMx-92-ewV"/>
+                <outlet property="collectionView" destination="AqN-xS-1bR" id="l3J-Fp-iAe"/>
+                <outlet property="followButton" destination="Q2I-Dm-4UQ" id="ioM-qz-f3O"/>
+                <outlet property="followersButton" destination="Kmj-ER-BFT" id="pQp-fd-Dh8"/>
+                <outlet property="followingButton" destination="ihZ-vL-YvX" id="IKx-eW-IRh"/>
+                <outlet property="menuButton" destination="OXf-Ob-6lZ" id="SO9-gz-EtB"/>
+                <outlet property="userPhoto" destination="zFp-f6-OSm" id="3Yr-fF-j0f"/>
+                <outlet property="usernameLabel" destination="h0c-EN-crx" id="Rsl-sx-JO9"/>
                 <outlet property="view" destination="i5M-Pr-FkT" id="sfx-zR-JGt"/>
             </connections>
         </placeholder>
@@ -33,6 +31,7 @@
                     <rect key="frame" x="0.0" y="272" width="375" height="395"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     <color key="backgroundColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                    <color key="tintColor" name="vibrantPurple"/>
                     <collectionViewFlowLayout key="collectionViewLayout" minimumLineSpacing="0.0" minimumInteritemSpacing="0.0" id="tMa-Cl-bqY">
                         <size key="itemSize" width="125" height="125"/>
                         <size key="headerReferenceSize" width="0.0" height="0.0"/>
@@ -43,37 +42,22 @@
                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="User Not Found" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="16" adjustsFontForContentSizeCategory="YES" translatesAutoresizingMaskIntoConstraints="NO" id="h0c-EN-crx">
                     <rect key="frame" x="115" y="96" width="216" height="39"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                    <color key="tintColor" name="vibrantPurple"/>
                     <fontDescription key="fontDescription" type="system" pointSize="32"/>
-                    <color key="textColor" red="0.50196078430000002" green="0.0" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                    <color key="highlightedColor" red="0.57919406890000003" green="0.1280144453" blue="0.57268613580000005" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                    <color key="textColor" name="vibrantPurple"/>
+                    <color key="highlightedColor" name="vibrantPurple"/>
                 </label>
-                <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="infoDark" showsTouchWhenHighlighted="YES" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ywH-HP-auI">
-                    <rect key="frame" x="337" y="96" width="22" height="22"/>
-                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <color key="tintColor" red="0.50196078430000002" green="0.0" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                    <connections>
-                        <action selector="infoPressed:" destination="-1" eventType="touchUpInside" id="PUl-1v-yzV"/>
-                    </connections>
-                </button>
                 <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Q2I-Dm-4UQ">
                     <rect key="frame" x="117" y="171" width="225" height="25"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <color key="backgroundColor" red="0.50196078430000002" green="0.0" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                    <color key="backgroundColor" name="vibrantPurple"/>
                     <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="14"/>
+                    <color key="tintColor" name="vibrantPurple"/>
                     <state key="normal" title="Follow">
                         <color key="titleColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                     </state>
                     <connections>
-                        <action selector="followPressed:" destination="-1" eventType="touchUpInside" id="clY-pM-gTs"/>
-                    </connections>
-                </button>
-                <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" showsTouchWhenHighlighted="YES" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="vwJ-8C-xiG">
-                    <rect key="frame" x="337" y="118" width="22" height="22"/>
-                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                    <color key="backgroundColor" red="1" green="0.23137254901960785" blue="0.18823529411764706" alpha="0.75436108732876717" colorSpace="custom" customColorSpace="sRGB"/>
-                    <state key="normal" image="block"/>
-                    <connections>
-                        <action selector="blockPressed:" destination="-1" eventType="touchUpInside" id="5CK-ml-3OA"/>
+                        <action selector="followPressed:" destination="-1" eventType="touchUpInside" id="VJ6-Cq-6Jy"/>
                     </connections>
                 </button>
                 <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Kmj-ER-BFT">
@@ -81,11 +65,12 @@
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     <color key="backgroundColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                     <fontDescription key="fontDescription" type="system" pointSize="12"/>
+                    <color key="tintColor" name="vibrantPurple"/>
                     <state key="normal" title="Followers: ">
-                        <color key="titleColor" red="0.50196078431372548" green="0.0" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="titleColor" name="vibrantPurple"/>
                     </state>
                     <connections>
-                        <action selector="followersPressed:" destination="-1" eventType="touchUpInside" id="s1j-ll-rID"/>
+                        <action selector="followersPressed:" destination="-1" eventType="touchUpInside" id="kIa-aV-ysE"/>
                     </connections>
                 </button>
                 <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ihZ-vL-YvX">
@@ -93,25 +78,33 @@
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     <color key="backgroundColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                     <fontDescription key="fontDescription" type="system" pointSize="12"/>
+                    <color key="tintColor" name="vibrantPurple"/>
                     <state key="normal" title="Following: ">
-                        <color key="titleColor" red="0.50196078431372548" green="0.0" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="titleColor" name="vibrantPurple"/>
                     </state>
                     <connections>
-                        <action selector="followingPressed:" destination="-1" eventType="touchUpInside" id="8N5-mD-jQx"/>
+                        <action selector="followingPressed:" destination="-1" eventType="touchUpInside" id="7wo-lo-SAx"/>
                     </connections>
                 </button>
                 <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" fixedFrame="YES" editable="NO" text="Biography" textAlignment="natural" selectable="NO" translatesAutoresizingMaskIntoConstraints="NO" id="05y-Eo-AOH">
                     <rect key="frame" x="16" y="204" width="259" height="60"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                    <color key="tintColor" name="vibrantPurple"/>
                     <fontDescription key="fontDescription" type="system" pointSize="14"/>
                     <textInputTraits key="textInputTraits" autocapitalizationType="sentences" returnKeyType="done" enablesReturnKeyAutomatically="YES"/>
                 </textView>
                 <imageView contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" image="ZStudiosLogo.png" translatesAutoresizingMaskIntoConstraints="NO" id="zFp-f6-OSm">
                     <rect key="frame" x="10" y="101" width="95" height="95"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                    <color key="tintColor" name="vibrantPurple"/>
                     <gestureRecognizers/>
                 </imageView>
+                <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="OXf-Ob-6lZ">
+                    <rect key="frame" x="285" y="92" width="82" height="48"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                    <state key="normal" image="dots"/>
+                </button>
             </subviews>
             <color key="backgroundColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
             <color key="tintColor" red="0.57919406890000003" green="0.1280144453" blue="0.57268613580000005" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
@@ -121,6 +114,9 @@
     </objects>
     <resources>
         <image name="ZStudiosLogo.png" width="200" height="177"/>
-        <image name="block" width="338" height="338"/>
+        <image name="dots" width="200" height="200"/>
+        <namedColor name="vibrantPurple">
+            <color red="0.5" green="0.0" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
     </resources>
 </document>

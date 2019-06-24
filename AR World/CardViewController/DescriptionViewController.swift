@@ -15,7 +15,6 @@ class DescriptionViewController: AuthHandlerViewController, UITableViewDelegate,
     
     var doc: ARItem?
     var comments = [Comment]()
-    public var camVC: CameraViewController!
     
     //Likes
     @IBOutlet weak var likesLabel: UILabel!
@@ -70,28 +69,28 @@ class DescriptionViewController: AuthHandlerViewController, UITableViewDelegate,
             textView.resignFirstResponder()
             return false
         }
-        if textView.text.count <= 3 {
+        if textView.text.count < 3 {
+            textView.text = "   "
             return false
+        } else if textView.text.count == 3 {
+            textView.text = " " + textView.text
         }
         return true
     }
     
-    @IBAction func directionsButtonPressed(_ sender: UIButton) {
-        let mapItem = MKMapItem(placemark: MKPlacemark(coordinate: CLLocationCoordinate2D(latitude: doc!.coordinates.latitude, longitude: doc!.coordinates.longitude)))
-        mapItem.name = titleLabel.text!
-        mapItem.openInMaps(launchOptions: nil)
-
-    }
     @IBOutlet weak var commentContainerView: UIView!
     @IBOutlet weak var commentBox: MultilineTextField!
     @IBOutlet weak var glomeLogo: UIImageView!
     @IBOutlet weak var titleLabel: UILabel!
     @IBOutlet weak var usernameButton: UsernameLinkButton!
-    @IBOutlet weak var distanceLabel: UILabel!
     @IBOutlet weak var profilePic: UIImageView!
     @IBOutlet weak var xButton: UIButton!
     @IBOutlet weak var menuButton: UIButton!
     @IBAction func xButtonPressed(_ sender: UIButton) {
+        if let cardVC = self.parent as? CardViewController {
+            cardVC.dismiss(animated: true, completion: nil)
+            return
+        }
         done()
     }
     @IBAction func menuButtonPressed(_ sender: UIButton) {
@@ -99,9 +98,15 @@ class DescriptionViewController: AuthHandlerViewController, UITableViewDelegate,
         actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
         let viewAction = UIAlertAction(title: "View", style: .default) { (action) in
             actionSheet.dismiss(animated: true, completion: nil)
-            self.camVC.singleDocToLoad = self.doc!
-            self.camVC.loadItemNonGeo()
+            camVC.singleDocToLoad = self.doc!
+            camVC.loadItemNonGeo()
+            tabVC.selectedIndex = 1
             self.dismiss(animated: true, completion: nil)
+        }
+        let directions = UIAlertAction(title: "Directions", style: .default) { (action) in
+            let mapItem = MKMapItem(placemark: MKPlacemark(coordinate: CLLocationCoordinate2D(latitude: self.doc!.coordinates.latitude, longitude: self.doc!.coordinates.longitude)))
+            mapItem.name = self.titleLabel.text!
+            mapItem.openInMaps(launchOptions: nil)
         }
         let flagAction = UIAlertAction(title: "Report", style: .destructive) { (alert) in
             let reportedAlert = UIAlertController(title: "Are you sure?", message: "Reporting this post may cause deletion of this account.", preferredStyle: .alert)
@@ -133,6 +138,7 @@ class DescriptionViewController: AuthHandlerViewController, UITableViewDelegate,
         }
         actionSheet.addAction(shareAction)
         actionSheet.addAction(viewAction)
+        actionSheet.addAction(directions)
         actionSheet.addAction(flagAction)
         present(actionSheet, animated: true, completion: nil)
     }
@@ -140,6 +146,24 @@ class DescriptionViewController: AuthHandlerViewController, UITableViewDelegate,
     
     //MARK: Outlets
     @IBOutlet weak var tableView: UITableView!
+    
+    var initialTransform: CATransform3D!
+    @objc func updateLogoSpin(sender: UIPanGestureRecognizer) {
+        switch sender.state {
+        case .began, .possible:
+            initialTransform = glomeLogo.layer.transform
+        case .changed:
+            let translation = sender.translation(in: view).y
+            glomeLogo.layer.transform = CATransform3DRotate(initialTransform!, translation/100.0, 0.0, 0.0, 1.0)
+        case .cancelled, .ended, .failed:
+            let path = #keyPath(CALayer.transform)
+            let temp = glomeLogo.layer.transform
+            glomeLogo.layer.transform = CATransform3DRotate(temp, CGFloat.pi, 0.0, 0.0, 1.0)
+            glomeLogo.layer.animate(path, from: temp, duration: 0.3)
+        @unknown default:
+            fatalError("Unkown case for sender.state")
+        }
+    }
     
     @objc func closeComments() {
         dismiss(animated: true, completion: nil)
@@ -156,6 +180,8 @@ class DescriptionViewController: AuthHandlerViewController, UITableViewDelegate,
         commentBox.layer.borderColor = UIColor.darkGray.cgColor
         commentBox.layer.borderWidth = 1
         commentContainerView.movesUpWithKeyboard(vc: self)
+        
+        profilePic.layer.zPosition = 5
         
         if X() {
             for subview in view.subviews {
@@ -192,18 +218,19 @@ class DescriptionViewController: AuthHandlerViewController, UITableViewDelegate,
         likesLabel.text = "\(numLikes)"
         //See if the current user has already liked the post
         if let currentUser = auth.currentUser {
-            getUser(uid: currentUser.uid, with: { (user) in
+            if doc!.likes.contains(where: { (like) -> Bool in
+                return like.uid == currentUser.uid
+            }) {
                 self.likeButton.setImage(UIImage(named: "liked"), for: .normal)
                 self.liked = true
-            })
+            }
         }
         
         let loc = CLLocation(latitude: doc!.coordinates.latitude, longitude: doc!.coordinates.longitude)
-        if let location = location {
-            distanceLabel.adjustsFontSizeToFitWidth = true
-            distanceLabel.text = "\(Int(location.distance(from: loc)*0.0006213711922373)) miles"
-    }
         
+        
+        tableView.panGestureRecognizer.addTarget(self, action: #selector(updateLogoSpin(sender:)))
+        glomeLogo.layer.zPosition = -200.0
         
         if X() {
             tableView.frame.size.height += 150
@@ -254,7 +281,6 @@ class DescriptionViewController: AuthHandlerViewController, UITableViewDelegate,
         return 1
     }
     
-    
     //MARK: Functions
     func reloadComments() {
         comments.removeAll()
@@ -265,13 +291,5 @@ class DescriptionViewController: AuthHandlerViewController, UITableViewDelegate,
             }
             self.tableView.reloadData()
         })
-    }
-    
-    private var originalTouch: CGFloat!
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        originalTouch = touches.first!.location(in: view).y
-    }
-    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-         glomeLogo.layer.transform = CATransform3DRotate(glomeLogo.layer.transform, touches.first!.location(in: view).y - originalTouch/10.0, 0.0, 0.0, 1.0)
     }
 }

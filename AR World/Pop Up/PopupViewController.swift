@@ -45,7 +45,6 @@ class PopupViewController: AuthHandlerViewController, UIPickerViewDelegate, UIPi
     
     
     var popUpType: PopUpType!
-    var parentVC: ViewController!
     
     func load() {
         self.view.layer.zPosition = 100
@@ -58,7 +57,7 @@ class PopupViewController: AuthHandlerViewController, UIPickerViewDelegate, UIPi
         present(webVC, animated: true, completion: nil)
     }
     @objc func hide() {
-        self.parentVC.hidePopUpView()
+//        self.parentVC.hidePopUpView()
     }
     @objc func agreeToEULA() {
         defaults.set(true, forKey: "eula")
@@ -68,17 +67,17 @@ class PopupViewController: AuthHandlerViewController, UIPickerViewDelegate, UIPi
         guard let oColor = colorButton!.layer.backgroundColor else {self.hide();return}
         guard let color = oColor.converted(to: CGColorSpaceCreateDeviceRGB(), intent: CGColorRenderingIntent.defaultIntent, options: nil) else {self.hide();return}
         guard let text = textField!.text, text != "" else {self.hide();return}
-        self.parentVC.camVC.addTextParamColor = UIColor(cgColor: color)
-        self.parentVC.camVC.addTextParamFont = fontButton!.titleLabel!.font.familyName
-        self.parentVC.camVC.addTextParamText = text
-        self.parentVC.camVC.addText()
+        camVC.addTextParamColor = UIColor(cgColor: color)
+        camVC.addTextParamFont = fontButton!.titleLabel!.font.familyName
+        camVC.addTextParamText = text
+        camVC.addText()
         self.hide()
     }
     @objc func addShape() {
         guard let oColor = colorButton!.layer.backgroundColor else {self.hide();return}
         guard let color = oColor.converted(to: CGColorSpaceCreateDeviceRGB(), intent: CGColorRenderingIntent.defaultIntent, options: nil) else {self.hide();return}
-        self.parentVC.camVC.addTextParamColor = UIColor(cgColor: color)
-        self.parentVC.camVC.addShape()
+        camVC.addTextParamColor = UIColor(cgColor: color)
+        camVC.addShape()
         self.hide()
     }
     var colorPicker: EFColorSelectionViewController?

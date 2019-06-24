@@ -47,3 +47,4 @@ TODO
 ++++ Fix pop-up
 ++++ Replace all strings with FirestoreKeys.x.rawValue
 +Scrolling out on map
++When a username is changed, it should change this for all of the user's items

@@ -19,11 +19,14 @@ var location: CLLocation?
 var auth: Auth!
 var db: Firestore!
 var storage: Storage!
-var mainVC: ViewController!
 var referralDatabase: Firestore!
+var tabVC: UITabBarController!
+var mapVC: MapViewController!
+var camVC: CameraViewController!
+var otherVC: OtherViewController!
 
 @UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate, CLLocationManagerDelegate {
+ class AppDelegate: UIResponder, UIApplicationDelegate, CLLocationManagerDelegate {
 
 
     var window: UIWindow?
@@ -41,11 +44,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate, CLLocationManagerDelegate
         applicationDelegate = self
         
         //FIREBASE
+        FirebaseConfiguration.shared.setLoggerLevel(.min)
         FirebaseApp.configure()
         storage = Storage.storage()
         db = Firestore.firestore()
         let settings = db.settings
         db.settings = settings
+        
         
         auth = Auth.auth()
         
@@ -73,8 +78,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate, CLLocationManagerDelegate
         //Styling
         let navA = UINavigationBar.appearance()
         navA.tintColor = vibrantPurple
+        UITabBar.appearance().tintColor = vibrantPurple
         
         
+        if let tab = self.window!.rootViewController as? UITabBarController {
+            tabVC = tab
+            if let map = tabVC.viewControllers!.first as? MapViewController {
+                mapVC = map
+            }
+            if let cam = tabVC.viewControllers![1] as? CameraViewController {
+                camVC = cam
+            }
+            if let other = tabVC.viewControllers![2] as? OtherViewController {
+                otherVC = other
+            }
+        }
         
         //Referral Database Setup
         let secondaryOptions = FirebaseOptions(googleAppID: "1:449196890018:ios:33b29ea025479d14", gcmSenderID: "449196890018")
@@ -90,6 +108,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, CLLocationManagerDelegate
 //            else { assert(false, "Could not retrieve referral app") }
         // Retrieve a Real Time Database client configured against a specific app.
 //        referralDatabase = Firestore.firestore(app: referral)
+    
         
         return true
     }

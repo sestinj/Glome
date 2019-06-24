@@ -202,7 +202,7 @@ public class ARItem: UserPost {
     
     override public init(doc: DocumentSnapshot) {
         let data = doc.data()!
-        name = data["name"] as! String
+        name = data["name"] as? String ?? ""
         comments = [Comment]()
         likes = [Like]()
         date = (data["date"] as? Timestamp ?? Timestamp(date: Date())).dateValue()
@@ -222,6 +222,32 @@ public class ARItem: UserPost {
                 let newLike = Like(doc: like.document)
                 self.likes.append(newLike)
             }
+        }
+    }
+    
+    public func retrieveImage(with completion: @escaping (UIImage?) -> Void) {
+        var image: UIImage?
+        switch self.mediaType {
+        case .text:
+            image = nil
+            completion(image)
+        case .gif:
+            image = UIImage(named: "giphy")
+            completion(image)
+        case .photo(let photoID):
+            storage.reference().child(photoID).getData(maxSize: 10240*10240) { (imageData, err) in
+                if let err = err {
+                    print(err)
+                } else {
+                    if let imageData = imageData {
+                        image = UIImage(data: imageData)
+                        completion(image)
+                    }
+                }
+            }
+        case .shape:
+            image = UIImage(named: "purpleCube3D")
+            completion(image)
         }
     }
 }
