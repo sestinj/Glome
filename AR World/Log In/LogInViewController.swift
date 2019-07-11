@@ -103,6 +103,36 @@ class LogInViewController: AuthHandlerViewController {
         present(emailAlert, animated: true, completion: nil)
     }
     
+        @objc fileprivate func takeToForgetPassword(){
+                var alert = UIAlertController(title: "Enter your mail address to send the reset link", message: nil, preferredStyle: .alert)
+        
+                alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+                alert.addTextField(configurationHandler: { textField in
+                    textField.placeholder = "johnappleseed@apple.com"
+                })
+        
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { (action) in
+            if let mailAddress = alert.textFields?.first?.text {
+                if mailAddress == ""{
+                    self.showQuickAlert(nil, string: "Enter a correct mail address in order to proceed")
+                }
+                else {
+                    Auth.auth().sendPasswordReset(withEmail: mailAddress) { (error) in
+                        switch error{
+                        case nil:
+                            alert.dismiss(animated: true) {
+                                self.showQuickAlert("The link is being successfully send! Check our your mail and come back", string: "")}
+                        default:
+                                         self.showQuickAlert("Unable to send you the link", string: "Error: \(error?.localizedDescription)")
+                        }
+                    }
+                }
+            }
+        }))
+        
+                self.present(alert, animated: true, completion: nil)
+            }
+    
     @IBOutlet weak var signInButton: UIButton!
     @IBOutlet weak var signUpButton: UIButton!
     @IBOutlet weak var titleLabel: UILabel!
@@ -134,3 +164,17 @@ class LogInViewController: AuthHandlerViewController {
     }
 
 }
+
+
+extension UIViewController {
+
+func showQuickAlert(_ header: String?, string: String){
+    var alert = UIAlertController(title: header, message: string, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .cancel, handler: nil))
+
+    self.present(alert, animated: true, completion: nil)
+}
+}
+
+
+
